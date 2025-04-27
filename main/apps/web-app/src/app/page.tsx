@@ -21,6 +21,7 @@ import { signMessage } from '@wagmi/core'
 import config from '@/app/providers'
 import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethers"
 // import { publicClient } from '@/lib/contract'
+import FaceButton from "@/components/FaceButton"
 
 
 type HomeProps = {
@@ -233,214 +234,161 @@ export default function HomePage() {
     }
 
     return (
-        <div className="p-[4rem] md:p-[8rem] lg:p-[10rem] ">
-            <div className="hero-content text-black text-center">
-                <div className="flex flex-col w-max">
-                    <div className="mb-5 text-5xl font-serif font-bold"> Get Your Universal Profile ID</div>
-                    <div className="mb-5 text-xl">
-                        Verify your onchain & offchain data for identity, credit score and healtcare data using
-                        TLSNotary & Worldcoin.
+        <div className="flex flex-col items-center justify-center p-4 md:p-8 lg:p-10">
+            <div className="text-black text-center max-w-6xl w-full">
+                <div className="flex flex-col items-center pt-10">
+                    <div className="flex flex-col items-center py-10">
+                        <h1 className="mb-5 text-4xl md:text-5xl font-serif font-bold">Get Your Agentic Verifiable Identity</h1>
+                        <p className="mb-8 text-lg md:text-xl">
+                        Verify your onchain & offchain data for identity and credit score using ZK proofs & AI models.
+                    </p>
                     </div>
-                    <div className="pt-10">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">ENS Verification</h2>
-                                        <div>
-                                            {/* {ensAvatar && <img alt="ENS Avatar" src={ensAvatar} />}
-                                            {address && <div>{ensName}</div>}
-                                            <button onClick={() => disconnect()}>Disconnect</button> */}
-                                            {isLoading ? (
-                                                <p>Loading ENS name...</p>
-                                            ) : isError ? (
-                                                <p>Error fetching ENS name</p>
-                                            ) : displayName ? (
-                                                <p>Connected as: {displayName}</p>
-                                            ) : (
-                                                <p>Please connect your wallet</p>
-                                            )}
-                                        </div>
-                                        <button
-                                            className="button-link bg-black m-2 px-4 py-2 text-white rounded"
-                                            onClick={signENSMessage}
-                                        >
-                                            Verify your ENS
-                                        </button>
-                                    </div>
-                                </Link>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">Twitter Verification</h2>
-                                        <p>Using TLSNotary</p>
-                                        <button
-                                            className="button-link bg-black m-2 px-4 py-2 text-white rounded"
-                                            onClick={createReview}
-                                        >
-                                            Verify your Profile
-                                        </button>
-                                    </div>
-                                </Link>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">Humanity Verification </h2>
-                                        <IDKitWidget
-                                            action={action!}
-                                            app_id={app_id}
-                                            onSuccess={onSuccess}
-                                            handleVerify={handleProof}
-                                            verification_level={VerificationLevel.Orb} // Change this to VerificationLevel.Device to accept Orb- and Device-verified users
-                                        />
-                                        <button
-                                            className="bg-gray-800 text-white py-2 px-4 rounded-md text-sm hover:bg-gray-900 transition-colors"
-                                            onClick={() => setOpen(true)}
-                                        >
-                                            {worldcoinVerified ? (
-                                                <div>
-                                                    Verified! <MdVerified className="text-green-400" />
-                                                </div>
-                                            ) : (
-                                                "Verify with World ID"
-                                            )}
-                                        </button>
-                                    </div>
-                                </Link>
-                            </div>
+                    {/* First row of cards */}
+                    <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+                        {/* ENS Verification Card */}
 
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">ENS Verification</h2>
+                            <div className="mb-4 flex-grow">
+                                {isLoading ? (
+                                    <p>Loading ENS name...</p>
+                                ) : isError ? (
+                                    <p>Seems like you don&apos;t have an ENS name :( </p>
+                                ) : displayName ? (
+                                    <p>Connected as: {displayName}</p>
+                                ) : (
+                                    <p>Please connect your wallet</p>
+                                )}
+                            </div>
+                            <button
+                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
+                                onClick={signENSMessage}
+                            >
+                                Verify your ENS
+                            </button>
                         </div>
-                    </div>
-                    <div className="py-5">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl">
-                                        <h2 className="text-2xl font-semibold mb-4">Nationality Verification</h2>
-                                        <p>Only Indian ID using AnonAdhaar </p>
 
-                                        <div className="pt-4 align-center ">
-                                            <LogInWithAnonAadhaar nullifierSeed={1234} />
-                                            {anonAadhaar.status === "logged-in" && (
-                                                <>
-                                                    <p>✅ Proof is valid</p>
-                                                    <p>Got your Aadhaar Identity Proof</p>
-                                                    <>Welcome anon!</>
-                                                    {latestProof && (
-                                                        <AnonAadhaarProof code={JSON.stringify(latestProof, null, 2)} />
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* Render the proof if generated and valid */}
-                                    </div>
-                                </Link>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">Credit Score Verification</h2>
-                                        <p>Using TLSNotary (pending)</p>
-                                    </div>
-                                </Link>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">Wallet Score</h2>
-                                        <div className="flex text-3xl justify-center">
-                                            {isConnected ? (
-                                                <div>
-                                                    {WalletScore?.stat}
-                                                    {/* <CreditCardScore /> */}
-                                                    <MdVerified className="text-green-400" />
-
-                                                </div>
-                                            ) : (
-                                                <div>
-                                                    <div className="text-sm">Connect your wallet</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
-
-                            <div className="bg-white p-6 rounded-xl shadow-xl ">
-                                <Link href="/">
-                                    <div className="bg-white p-6 rounded-xl ">
-                                        <h2 className="text-2xl font-semibold mb-4">Health Data</h2>
-                                        <div className="flex text-xl justify-center">
-                                            Coming Soon
-                                            <MdOutlinePendingActions className="text-green-400 text-3xl" />
-                                        </div>
-                                    </div>
-                                </Link>
+                        {/* Face Verification Card */}
+                        <div className="bg-white p-10 rounded-xl shadow-md h-full flex flex-col">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Face Verification</h2>
+                            <p className="mb-4 flex-grow">Complete a quick face scan to verify your liveliness as a human.</p>
+                            <div className="flex justify-center mt-auto">
+                                <FaceButton className="px-6" buttonText="Verify Liveness" />
                             </div>
                         </div>
+
+                        {/* Twitter Verification Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Twitter Verification</h2>
+                            <p className="mb-4 flex-grow">Using TLSNotary</p>
+                            <button
+                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
+                                onClick={createReview}
+                            >
+                                Verify your Profile
+                            </button>
+                        </div>
+
+                        {/* Humanity Verification Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Humanity Verification</h2>
+                            <div className="hidden">
+                                <IDKitWidget
+                                    action={action!}
+                                    app_id={app_id}
+                                    onSuccess={onSuccess}
+                                    handleVerify={handleProof}
+                                    verification_level={VerificationLevel.Orb}
+                                />
+                            </div>
+                            <div className="flex-grow mb-4"></div>
+                            <button
+                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
+                                onClick={() => setOpen(true)}
+                            >
+                                {worldcoinVerified ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        Verified! <MdVerified className="text-green-400" />
+                                    </div>
+                                ) : (
+                                    "Verify with World ID"
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Nationality Verification Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Nationality Verification</h2>
+                            <p className="mb-2">Only Indian ID using AnonAdhaar</p>
+                            <div className="flex-grow flex flex-col justify-center items-center">
+                                <LogInWithAnonAadhaar nullifierSeed={1234} />
+                                {anonAadhaar.status === "logged-in" && (
+                                    <div className="mt-2 text-center text-green-400">
+                                        <p>✅ Proof is valid</p>
+                                        <p>Got your Aadhaar Identity Proof</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Credit Score Verification Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Credit Score Verification</h2>
+                            <p className="flex-grow">Using TLSNotary (pending)</p>
+                        </div>
+
+                        {/* Wallet Score Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Wallet Score</h2>
+                            <div className="flex-grow flex items-center justify-center text-3xl">
+                                {isConnected ? (
+                                    <div className="flex items-center gap-2">
+                                        {WalletScore?.stat}
+                                        <MdVerified className="text-green-400" />
+                                    </div>
+                                ) : (
+                                    <div className="text-sm">Connect your wallet</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* NebulaID Section */}
+                    <div className="w-full mt-8 flex flex-col items-center">
+                        <p className="mb-4 text-lg">Your Token ID: {tokenId || "You don't have a NebulaID yet"}</p>
+
+                        {!tokenId ? (
+                            <button
+                                onClick={mintNebulaID}
+                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                            >
+                                Mint Your NebulaID
+                            </button>
+                        ) : (
+                            <button
+                                onClick={getIdentity}
+                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                            >
+                                Get Identity
+                            </button>
+                        )}
+
+                        {identity && (
+                            <div className="mt-6 p-5 bg-white rounded-xl shadow-md w-full max-w-md">
+                                <h2 className="text-xl font-semibold mb-3">Your NebulaID Identity:</h2>
+                                <div className="space-y-2">
+                                    <p>Twitter Verified: {identity.twitterVerified.toString()}</p>
+                                    <p>Human Verified: {identity.humanVerified.toString()}</p>
+                                    <p>Nationality: {identity.nationality}</p>
+                                    <p>Health Status: {identity.healthStatus}</p>
+                                    <p>Credit Score: {identity.creditScore}</p>
+                                    <p>Wallet Score: {identity.walletScore}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div >
-
-            <div className="text-top">
-                {_reviews.length > 0 && (
-                    <button className="button-link" onClick={createReview}>
-                        Add Review
-                    </button>
-                )}
             </div>
-
-            {
-                _reviews.length > 0 ? (
-                    <div>
-                        {_reviews.map((f, i) => (
-                            <div key={i}>
-                                <p className="box box-text">{f}</p>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div>
-                        <button className="button" onClick={createReview}>
-                            Create Verify
-                        </button>
-                    </div>
-                )
-            }
-            <p>Your Token ID: {tokenId || "You don't have a NebulaID yet"}</p>
-
-            {
-                !tokenId && (
-                    <button onClick={mintNebulaID} className="bg-black text-white px-6 py-4 rounded-xl">
-                        Mint Your NebulaID
-                    </button>
-                )
-            }
-
-            {
-                tokenId && (
-                    <>
-                        <button onClick={getIdentity}>Get Identity</button>
-                    </>
-                )
-            }
-
-            {
-                identity && (
-                    <div>
-                        <h2>Your NebulaID Identity:</h2>
-                        <p>Twitter Verified: {identity.twitterVerified.toString()}</p>
-                        <p>Human Verified: {identity.humanVerified.toString()}</p>
-                        <p>Nationality: {identity.nationality}</p>
-                        <p>Health Status: {identity.healthStatus}</p>
-                        <p>Credit Score: {identity.creditScore}</p>
-                        <p>Wallet Score: {identity.walletScore}</p>
-                    </div>
-                )
-            }
-        </div >
+        </div>
     )
 }

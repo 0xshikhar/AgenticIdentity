@@ -14,24 +14,24 @@ import {
 import { WagmiProvider } from "wagmi"
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query"
 import "dotenv/config"
-import { arbitrumSepolia, arbitrum, sepolia, mainnet } from "viem/chains"
+import { sepolia, rootstock, rootstockTestnet} from "viem/chains"
 
 const projectId = "9811958bd307518b364ff7178034c435"
 
 export const config = getDefaultConfig({
     appName: "NebulaID",
     projectId: projectId,
-    chains: [arbitrumSepolia, arbitrum, sepolia, mainnet],
+    chains: [rootstockTestnet, rootstock, sepolia],
     ssr: true // If your dApp uses server side rendering (SSR)
 })
 
 const { wallets } = getDefaultWallets({
-    appName: "NebulaID",
+    appName: "Agentic Identity",
     projectId
 })
 
 const demoAppInfo = {
-    appName: "Universal Identity Protocol"
+    appName: "Agentic Identity"
 }
 
 const queryClient = new QueryClient()

@@ -4175,6 +4175,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tensorflow/tfjs-core@npm:1.7.0":
+  version: 1.7.0
+  resolution: "@tensorflow/tfjs-core@npm:1.7.0"
+  dependencies:
+    "@types/offscreencanvas": "npm:~2019.3.0"
+    "@types/seedrandom": "npm:2.4.27"
+    "@types/webgl-ext": "npm:0.0.30"
+    "@types/webgl2": "npm:0.0.4"
+    node-fetch: "npm:~2.1.2"
+    seedrandom: "npm:2.4.3"
+  checksum: 10/684afd266564ae2c9e9b6e559de3570c8c4f0d73d62be5be04b7497d90bbbbd6859622c82656b2bab715392b1d6a2b74e8b1fedbc999df51723c543eac8dac1f
+  languageName: node
+  linkType: hard
+
 "@tsconfig/node10@npm:^1.0.7":
   version: 1.0.11
   resolution: "@tsconfig/node10@npm:1.0.11"
@@ -4461,6 +4475,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/offscreencanvas@npm:~2019.3.0":
+  version: 2019.3.0
+  resolution: "@types/offscreencanvas@npm:2019.3.0"
+  checksum: 10/3d47566fd6c1fea45d74c271939aef37eda51d48c393085f3b3b445759fdb35c7345979bcb3cd236bd50a7800c07222fb598c45e50837ef25d19790a7bb89d0d
+  languageName: node
+  linkType: hard
+
 "@types/pako@npm:^2.0.0":
   version: 2.0.3
   resolution: "@types/pako@npm:2.0.3"
@@ -4553,6 +4574,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/seedrandom@npm:2.4.27":
+  version: 2.4.27
+  resolution: "@types/seedrandom@npm:2.4.27"
+  checksum: 10/5fbca09b8cf0b26fea32627e9f9ead81ddafc4c075170d243fecb00d06ccdd8c5c6ec14932d8069e2aa024b34d3bb234ff400fbeec86ab9790f95705975c70a9
+  languageName: node
+  linkType: hard
+
 "@types/snarkjs@npm:^0.7.6":
   version: 0.7.8
   resolution: "@types/snarkjs@npm:0.7.8"
@@ -4610,6 +4638,20 @@ __metadata:
   version: 1.6.38
   resolution: "@types/webfontloader@npm:1.6.38"
   checksum: 10/2be3d1e43837ddeea8ea0390d0952fc735abc6d713b2b87843ad0a6d4acd6628b2ce8f0280ec81d48144a23e358d1bd22c16e4717cc8d67f75c1cd1ddc2d0f27
+  languageName: node
+  linkType: hard
+
+"@types/webgl-ext@npm:0.0.30":
+  version: 0.0.30
+  resolution: "@types/webgl-ext@npm:0.0.30"
+  checksum: 10/1a7515ad70dce92f4be65495e4c636414295406fea1e8c7dd510d8e1ed2a8ea19d8bafd298053d6f0d5ef7a06d0a9f8b73633d6ab5c301e85a4ef178e3685e79
+  languageName: node
+  linkType: hard
+
+"@types/webgl2@npm:0.0.4":
+  version: 0.0.4
+  resolution: "@types/webgl2@npm:0.0.4"
+  checksum: 10/2f3b60fbbed1fb4a6ef427adf1ea061bdfa575061e973cb5a3f70a9b86d6449b04a342d874f9aaec8bbbf0c1200b2f753f322c95315b702e96c504a6282b6874
   languageName: node
   linkType: hard
 
@@ -8846,6 +8888,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"face-api.js@npm:^0.22.2":
+  version: 0.22.2
+  resolution: "face-api.js@npm:0.22.2"
+  dependencies:
+    "@tensorflow/tfjs-core": "npm:1.7.0"
+    tslib: "npm:^1.11.1"
+  checksum: 10/ec8c9f50946c41bb8fe99084f85b29f70fa6f8a4f133c98fa8c119b1de7104dbb6f64449f561e5113d4e67256605a56c16ec3598b2b4ac583d9b21390aa04c7b
+  languageName: node
+  linkType: hard
+
 "fast-copy@npm:^3.0.2":
   version: 3.0.2
   resolution: "fast-copy@npm:3.0.2"
@@ -11909,6 +11961,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-config-next: "npm:14.1.0"
     ethers: "npm:6.11.1"
+    face-api.js: "npm:^0.22.2"
     jotai: "npm:^2.9.0"
     next: "npm:14.1.0"
     next-pwa: "npm:^5.6.0"
@@ -12185,6 +12238,13 @@ __metadata:
     encoding:
       optional: true
   checksum: 10/b24f8a3dc937f388192e59bcf9d0857d7b6940a2496f328381641cb616efccc9866e89ec43f2ec956bbd6c3d3ee05524ce77fe7b29ccd34692b3a16f237d6676
+  languageName: node
+  linkType: hard
+
+"node-fetch@npm:~2.1.2":
+  version: 2.1.2
+  resolution: "node-fetch@npm:2.1.2"
+  checksum: 10/e3f30db1f20a831cc9eefad478e40222fc74add1acfd7064de745355a2e72684ad9d44bda1199f5c00aa7c6775bbc882c01722956d63638b7843ab681713467b
   languageName: node
   linkType: hard
 
@@ -14213,6 +14273,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"seedrandom@npm:2.4.3":
+  version: 2.4.3
+  resolution: "seedrandom@npm:2.4.3"
+  checksum: 10/6ae498bef0b61f340d7f5bac58cae426341b7821dfa664ed94e3ac3ca8a5466dd50f7dbcdf85f29d927eefc68f810f949bf762bde61aaf770a4f1613ec892c55
+  languageName: node
+  linkType: hard
+
 "semver@npm:^5.5.0":
   version: 5.7.2
   resolution: "semver@npm:5.7.2"
@@ -15588,7 +15655,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:1.14.1, tslib@npm:^1.9.3":
+"tslib@npm:1.14.1, tslib@npm:^1.11.1, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: 10/7dbf34e6f55c6492637adb81b555af5e3b4f9cc6b998fb440dac82d3b42bdc91560a35a5fb75e20e24a076c651438234da6743d139e4feabf0783f3cdfe1dddb
