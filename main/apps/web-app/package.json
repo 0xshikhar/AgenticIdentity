@@ -1,0 +1,52 @@
+{
+    "name": "monorepo-ethers-web-app",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@anon-aadhaar/react": "^2.4.0",
+        "@ensdomains/ensjs": "4.0.1-alpha.0",
+        "@rainbow-me/rainbowkit": "^2.1.3",
+        "@semaphore-protocol/core": "4.0.3",
+        "@semaphore-protocol/data": "4.0.3",
+        "@semaphore-protocol/utils": "4.0.3",
+        "@tanstack/react-query": "^5.50.1",
+        "@worldcoin/idkit": "^1.3.0",
+        "alchemy-sdk": "^2.6.2",
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.1.1",
+        "daisyui": "^2.51.6",
+        "ethers": "6.11.1",
+        "jotai": "^2.9.0",
+        "next": "14.1.0",
+        "next-pwa": "^5.6.0",
+        "react": "^18",
+        "react-dom": "^18",
+        "react-icons": "^5.3.0",
+        "react-toastify": "^8.0.3",
+        "tailwind-merge": "^2.4.0",
+        "tailwindcss-animate": "^1.0.7",
+        "uuid": "^10.0.0",
+        "viem": "2.x",
+        "wagmi": "^2.10.9"
+    },
+    "devDependencies": {
+        "@types/node": "^20",
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "@types/uuid": "^10.0.0",
+        "autoprefixer": "^10.4.20",
+        "dotenv": "^16.4.5",
+        "eslint": "^8",
+        "eslint-config-next": "14.1.0",
+        "pino-pretty": "^11.2.2",
+        "postcss": "^8.4.47",
+        "tailwindcss": "^3.4.13",
+        "typescript": "^5"
+    }
+}
