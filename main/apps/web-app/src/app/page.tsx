@@ -22,6 +22,7 @@ import config from '@/app/providers'
 import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethers"
 // import { publicClient } from '@/lib/contract'
 import FaceButton from "@/components/FaceButton"
+import { FaceVerificationData } from '@/components/FaceButton'
 
 
 type HomeProps = {
@@ -64,6 +65,9 @@ export default function HomePage() {
     const [identity, setIdentity] = useState(null)
     const [nationality, setNationality] = useState(0)
     const [identityStatus, setIdentityStatus] = useState(false)
+
+    // Add new state for face verification data
+    const [faceVerificationData, setFaceVerificationData] = useState<FaceVerificationData | null>(null);
 
     useEffect(() => {
         if (ensName) {
@@ -233,6 +237,18 @@ export default function HomePage() {
         }
     }
 
+    // Add handler for face verification completion
+    const handleFaceVerificationComplete = (data: FaceVerificationData) => {
+        console.log("Face verification completed:", data);
+        setFaceVerificationData(data);
+        
+        // If verification was successful, you could update other state as needed
+        if (data.success) {
+            // For example, you might want to track that human verification is complete
+            // or update some other state related to identity verification
+        }
+    };
+
     return (
         <div className="flex flex-col items-center justify-center p-4 md:p-8 lg:p-10">
             <div className="text-black text-center max-w-6xl w-full">
@@ -271,9 +287,46 @@ export default function HomePage() {
                         {/* Face Verification Card */}
                         <div className="bg-white p-10 rounded-xl shadow-md h-full flex flex-col">
                             <h2 className="text-xl md:text-2xl font-semibold mb-3">Face Verification</h2>
-                            <p className="mb-4 flex-grow">Complete a quick face scan to verify your liveliness as a human.</p>
+                            <div className="flex-grow">
+                                <p className="mb-4">Complete a quick face scan to verify your liveliness as a human.</p>
+                                
+                                {/* Show verification data if available */}
+                                {faceVerificationData && (
+                                    <div className="mt-2 mb-4">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium">Status:</span>
+                                            <span className={faceVerificationData.success ? "text-green-600" : "text-red-600"}>
+                                                {faceVerificationData.success ? "Verified" : "Not Verified"}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-medium">Liveness Score:</span>
+                                            <span>{faceVerificationData.livenessScore.toFixed(0)}%</span>
+                                        </div>
+                                        
+                                        {faceVerificationData.ageGender && (
+                                            <>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-medium">Age Estimate:</span>
+                                                    <span>{faceVerificationData.ageGender.age}</span>
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium">Gender:</span>
+                                                    <span>{faceVerificationData.ageGender.gender}</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex justify-center mt-auto">
-                                <FaceButton className="px-6" buttonText="Verify Liveness" />
+                                <FaceButton 
+                                    className="px-6" 
+                                    buttonText="Verify Liveness" 
+                                    onVerificationComplete={handleFaceVerificationComplete}
+                                />
                             </div>
                         </div>
 

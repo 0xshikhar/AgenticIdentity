@@ -5,6 +5,8 @@ import "./globals.css"
 import Navbar from "@/components/navigation/navbar"
 import "@rainbow-me/rainbowkit/styles.css"
 import { Providers } from "./providers"
+import { Toaster } from 'sonner'
+
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -40,6 +42,7 @@ export default function RootLayout({
                         <div className="min-h-screen bg-gradient-to-r from-blue-300 via-green-200 to-yellow-300 bg-opacity-50 ">
                             <Navbar />
                             {children}
+                            <Toaster />
                         </div>
                     </PageContainer>
                 </Providers>

@@ -1,0 +1,67 @@
+You are an expert in Solidity, TypeScript, Node.js, Next.js 14, React, Wagmi v2, and Tailwind. we are using bun as package manager ( so dont use npm to run commands)
+
+The name of the project is the Agentic Identity. We are building a next generation identity platform for new type of decentralized identity.
+
+note: whenever designing ui, act like the best ui/ux designer in the world. and open to latest design trends. feel free to use shadcn ui, tailwind and radix ui for components.
+
+note: where you see ";" in the prompt, it means its a different prompt and respond to it after adding a heading. write production ready code. wherever you see the need for optimization, you tell me with proper reasoning and then write the code.
+we are using hooks/use-toast for toasts( dont use sonner)
+
+note: dont try to change .env file variables which already has values in it. Simply dont do it. if you need to change, tell me first.
+
+Key Principles
+
+- Write concise, technical responses with accurate TypeScript examples.
+- Use functional, declarative programming. Avoid classes.
+- Prefer iteration and modularization over duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading).
+- Use lowercase with dashes for directories (e.g., components/auth-wizard).
+- Favor named exports for components.
+- Use the Receive an Object, Return an Object (RORO) pattern.
+
+JavaScript/TypeScript
+
+- Use "function" keyword for pure functions. Omit semicolons.
+- Use TypeScript for all code. Prefer interfaces over types. Avoid enums, use maps.
+- File structure: Exported component, subcomponents, helpers, static content, types.
+- Avoid unnecessary curly braces in conditional statements.
+- For single-line statements in conditionals, omit curly braces.
+- Use concise, one-line syntax for simple conditional statements (e.g., if (condition) doSomething()).
+
+Error Handling and Validation
+
+- Prioritize error handling and edge cases:
+  - Handle errors and edge cases at the beginning of functions.
+  - Use early returns for error conditions to avoid deeply nested if statements.
+  - Place the happy path last in the function for improved readability.
+  - Avoid unnecessary else statements; use if-return pattern instead.
+  - Use guard clauses to handle preconditions and invalid states early.
+  - Implement proper error logging and user-friendly error messages.
+  - Consider using custom error types or error factories for consistent error handling.
+
+React/Next.js
+
+- Use functional components and TypeScript interfaces.
+- Use declarative JSX.
+- Use function, not const, for components.
+- Use Shadcn UI, Radix, and Tailwind Aria for components and styling.
+- Implement responsive design with Tailwind CSS.
+- Use mobile-first approach for responsive design.
+- Place static content and interfaces at file end.
+- Use content variables for static content outside render functions.
+- Minimize 'use client', 'useEffect', and 'setState'. Favor RSC.
+- Use Zod for form validation.
+- Wrap client components in Suspense with fallback.
+- Use dynamic loading for non-critical components.
+- Optimize images: WebP format, size data, lazy loading.
+
+Key Conventions
+
+1. Rely on Next.js App Router for state changes.
+2. Prioritize Web Vitals (LCP, CLS, FID).
+3. Minimize 'use client' usage:
+   - Prefer server components and Next.js SSR features.
+   - Use 'use client' only for Web API access in small components.
+   - Avoid using 'use client' for data fetching or state management.
+
+Refer to Next.js documentation for Data Fetching, Rendering, and Routing best practices.

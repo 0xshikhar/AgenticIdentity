@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { CiCamera } from "react-icons/ci";
+import FaceRecognitionComponent from "./FaceRecognition";
 
+// Create an interface for verification data
+export interface FaceVerificationData {
+    success: boolean;
+    livenessScore: number;
+    ageGender?: { age: number; gender: string } | null;
+}
 
 // Dynamically import the FaceRecognition component to prevent SSR issues
-const FaceRecognitionComponent = dynamic(
+const FaceRecognitionComponentDynamic = dynamic(
     () => import("./FaceRecognition"),
     {
         ssr: false,
@@ -25,14 +32,32 @@ const FaceRecognitionComponent = dynamic(
 interface FaceButtonProps {
     buttonText?: string;
     className?: string;
+    onVerificationComplete?: (data: FaceVerificationData) => void;
 }
 
 const FaceButton: React.FC<FaceButtonProps> = ({
     buttonText = "Verify Liveliness",
     className = "",
+    onVerificationComplete
 }) => {
     const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [verificationData, setVerificationData] = useState<FaceVerificationData | null>(null);
     const modalRef = useRef<HTMLDivElement>(null);
+
+    // Handle verification data from FaceRecognition component
+    const handleVerificationComplete = (data: FaceVerificationData) => {
+        setVerificationData(data);
+        
+        // Pass verification data to parent component if callback provided
+        if (onVerificationComplete) {
+            onVerificationComplete(data);
+        }
+        
+        // Close modal after a short delay for better UX
+        setTimeout(() => {
+            setIsOpen(false);
+        }, 2000);
+    };
 
     // Close modal when clicking outside
     useEffect(() => {
@@ -75,7 +100,18 @@ const FaceButton: React.FC<FaceButtonProps> = ({
                 className={`flex items-center gap-2 py-2 px-4 bg-black hover:bg-gray-700 text-white font-medium rounded-md shadow-sm transition-colors ${className}`}
             >
                 <CiCamera className="text-2xl font-bold" />
-                {buttonText}
+                <div className="flex items-center justify-center gap-2">
+                    {verificationData?.success ? (
+                        <>
+                            Verified! 
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                        </>
+                    ) : (
+                        buttonText
+                    )}
+                </div>
             </button>
 
             {/* Modal Overlay */}
@@ -84,24 +120,15 @@ const FaceButton: React.FC<FaceButtonProps> = ({
                     {/* Modal Content */}
                     <div
                         ref={modalRef}
-                        className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto animate-fade-in"
+                        className="bg-white shadow-xl w-[800px] h-[520px] mx-auto animate-fade-in rounded-3xl"
                     >
-                        {/* Modal Header */}
-                        <div className="p-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">Face Verification</h2>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Complete a quick face scan to verify your identity.
-                                No data is stored during this process.
-                            </p>
-                        </div>
-
                         {/* Modal Body */}
                         <div className="p-4">
-                            <FaceRecognitionComponent />
+                            <FaceRecognitionComponent onVerificationComplete={handleVerificationComplete} />
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end rounded-3xl">
                             <button
                                 type="button"
                                 className="py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md shadow-sm transition-colors"
