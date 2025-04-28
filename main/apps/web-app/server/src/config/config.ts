@@ -1,0 +1,41 @@
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const getEnv = (key: string, defaultValue: string = ''): string => {
+    return process.env[key] || defaultValue;
+};
+
+export const config = {
+    env: getEnv('NODE_ENV', 'development'),
+    port: parseInt(getEnv('PORT', '4000')),
+
+    rskNode: {
+        url: getEnv('RSK_NODE_URL', 'https://public-node.rsk.co')
+    },
+
+    rootstockApi: {
+        url: getEnv('ROOTSTOCK_API_URL', 'https://rootstock.blockscout.com'),
+        apiKey: getEnv('ROOTSTOCK_API_KEY', '')
+    },
+
+    jwt: {
+        secret: getEnv('JWT_SECRET', 'your-secret-key'),
+        expiresIn: getEnv('JWT_EXPIRES_IN', '7d')
+    },
+
+    scoreConfig: {
+        // Weights for different factors in reputation score calculation
+        weights: {
+            walletAge: 0.15,
+            transactionVolume: 0.25,
+            transactionFrequency: 0.20,
+            contractInteractions: 0.15,
+            networkDiversity: 0.15,
+            stakingHistory: 0.10
+        },
+        // Cache duration for scores in seconds (1 day)
+        cacheDuration: 86400
+    }
+};

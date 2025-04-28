@@ -23,7 +23,7 @@ import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethe
 // import { publicClient } from '@/lib/contract'
 import FaceButton from "@/components/FaceButton"
 import { FaceVerificationData } from '@/components/FaceButton'
-
+import { toast } from 'sonner'
 
 type HomeProps = {
     setUseTestAadhaar: (state: boolean) => void
@@ -70,11 +70,17 @@ export default function HomePage() {
     const [faceVerificationData, setFaceVerificationData] = useState<FaceVerificationData | null>(null);
 
     useEffect(() => {
-        if (ensName) {
-            setDisplayName(ensName);
-        } else if (address) {
-            setDisplayName(address); // If no ENS name, display address
+        const ensName = async () => {
+            const ensName = await publicClient.getEnsName({
+                address: address,
+            })
+            if (ensName) {
+                setDisplayName(ensName);
+            } else if (address) {
+                setDisplayName(address); // If no ENS name, display address
+            }
         }
+        ensName()
     }, [ensName, address]);
 
     useEffect(() => {
@@ -159,7 +165,7 @@ export default function HomePage() {
 
     const signENSMessage = async () => {
         if (!displayName) {
-            alert('Do you have an ENS name?');
+            toast.error('Do you have an ENS name?');
             return;
         }
 
