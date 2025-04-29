@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ScoreService } from '../services/score.service';
 import { ApiError } from '../utils/api-error';
-import { AuthRequest } from '../middleware/auth.middleware';
+// import { AuthRequest } from '../middleware/auth.middleware';
 import { validateAddress } from '../utils/blockchain';
 
 export class ScoreController {
@@ -99,6 +99,36 @@ export class ScoreController {
                 success: true,
                 data: updatedConfig
             });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    getAIScore = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { walletAddress } = req.params;
+
+            if (!validateAddress(walletAddress)) {
+                throw ApiError.badRequest('Invalid wallet address format');
+            }
+
+            const score = await this.scoreService.getAIGeneratedScore(walletAddress);
+            res.status(200).json({ success: true, data: score });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    getEnhancedScore = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { walletAddress } = req.params;
+
+            if (!validateAddress(walletAddress)) {
+                throw ApiError.badRequest('Invalid wallet address format');
+            }
+
+            const score = await this.scoreService.getEnhancedReputationScore(walletAddress); 
+            res.status(200).json({ success: true, data: score });
         } catch (error) {
             next(error);
         }

@@ -2,79 +2,55 @@
 import { prisma } from '../index';
 import { ApiError } from '../utils/api-error';
 import { fetchTransactions } from '../utils/blockchain';
+import { TransactionStats } from '../utils/score-calculator';
 
 export class TransactionService {
+
     async getWalletTransactions(
         walletAddress: string,
         page: number = 1,
         limit: number = 20,
         sort: 'asc' | 'desc' = 'desc'
     ) {
-        // Convert address to lowercase for consistency
         const normalizedAddress = walletAddress.toLowerCase();
+        const skip = (page - 1) * limit;
 
-        // Get transactions from database
         const transactions = await prisma.transaction.findMany({
-            where: {
-                OR: [
-                    { from: normalizedAddress },
-                    { to: normalizedAddress }
-                ]
-            },
-            orderBy: {
-                timestamp: sort
-            },
-            skip: (page - 1) * limit,
+            where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] },
+            orderBy: { timestamp: sort },
+            skip,
             take: limit
         });
 
-        // Get total count for pagination
         const totalCount = await prisma.transaction.count({
-            where: {
-                OR: [
-                    { from: normalizedAddress },
-                    { to: normalizedAddress }
-                ]
-            }
+            where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] }
         });
 
-        // If no transactions found in database, try to fetch from blockchain
-        if (transactions.length === 0 && page === 1) {
-            await this.syncWalletTransactions(walletAddress);
-
-            // Try to get transactions again
+        // Optional: Trigger sync if no transactions found on first page request
+        if (transactions.length === 0 && page === 1 && totalCount === 0) {
+            console.log(`No transactions found for ${normalizedAddress}, attempting sync.`);
+            await this.syncWalletTransactions(normalizedAddress);
+            // Re-query after sync
             const freshTransactions = await prisma.transaction.findMany({
-                where: {
-                    OR: [
-                        { from: normalizedAddress },
-                        { to: normalizedAddress }
-                    ]
-                },
-                orderBy: {
-                    timestamp: sort
-                },
+                where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] },
+                orderBy: { timestamp: sort },
+                skip,
                 take: limit
             });
-
-            if (freshTransactions.length > 0) {
-                return {
-                    data: freshTransactions,
-                    pagination: {
-                        page,
-                        limit,
-                        totalCount: await prisma.transaction.count({
-                            where: {
-                                OR: [
-                                    { from: normalizedAddress },
-                                    { to: normalizedAddress }
-                                ]
-                            }
-                        }),
-                        totalPages: Math.ceil(totalCount / limit)
-                    }
-                };
-            }
+            const freshTotalCount = await prisma.transaction.count({
+                where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] }
+            });
+            return {
+                data: freshTransactions,
+                pagination: {
+                    page,
+                    limit,
+                    totalCount: freshTotalCount,
+                    totalPages: Math.ceil(freshTotalCount / limit)
+                }
+            };
         }
+
 
         return {
             data: transactions,
@@ -87,134 +63,224 @@ export class TransactionService {
         };
     }
 
-    async getTransactionStats(walletAddress: string, period: string = '30d') {
-        // Convert address to lowercase for consistency
+    async getTransactionStats(walletAddress: string, period: string = 'all') {
         const normalizedAddress = walletAddress.toLowerCase();
+        const isAllTime = period === 'all';
+        const startDate = isAllTime ? undefined : this.getStartDateFromPeriod(period);
 
-        // Parse the period to get a start date
-        const startDate = this.getStartDateFromPeriod(period);
+        const whereClause: any = {
+            OR: [
+                { from: normalizedAddress },
+                { to: normalizedAddress }
+            ]
+        };
+        if (startDate) {
+            whereClause.timestamp = { gte: startDate };
+        }
 
-        // Get transaction stats
-        const sentTransactions = await prisma.transaction.count({
-            where: {
-                from: normalizedAddress,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        });
+        // Fetch all relevant transactions for the period at once
+        const transactions = await prisma.transaction.findMany({ where: whereClause });
 
-        const receivedTransactions = await prisma.transaction.count({
-            where: {
-                to: normalizedAddress,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        });
+        const sentTransactionsList = transactions.filter((tx: any) => tx.from === normalizedAddress);
+        const receivedTransactionsList = transactions.filter((tx: any) => tx.to === normalizedAddress);
 
-        // Get unique addresses interacted with
-        const uniqueContacts = await prisma.$queryRaw`
-      SELECT COUNT(DISTINCT address) as count 
-      FROM (
-        SELECT "to" as address FROM "Transaction" 
-        WHERE "from" = ${normalizedAddress} AND "timestamp" >= ${startDate}
-        UNION
-        SELECT "from" as address FROM "Transaction" 
-        WHERE "to" = ${normalizedAddress} AND "timestamp" >= ${startDate}
-      ) as contacts
-    `;
+        const sentTransactions = sentTransactionsList.length;
+        const receivedTransactions = receivedTransactionsList.length;
+        const totalTransactions = transactions.length;
 
-        // Get transaction volume
-        const transactionVolume = await prisma.transaction.aggregate({
-            _sum: {
-                value: true
-            },
-            where: {
-                OR: [
-                    { from: normalizedAddress },
-                    { to: normalizedAddress }
-                ],
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        });
+        // Calculate total value (consider using BigInt for precision if values can be large)
+        const totalValueSent = sentTransactionsList.reduce((sum: number, tx: any) => sum + (tx.value || 0), 0);
+        const totalValueReceived = receivedTransactionsList.reduce((sum: number, tx: any) => sum + (tx.value || 0), 0);
+        const netValueChange = totalValueReceived - totalValueSent; // Example derived stat
+        const totalValue = totalValueSent + totalValueReceived; // Or just total volume if needed
 
-        // Get contract interactions
-        const contractInteractions = await prisma.transaction.count({
-            where: {
-                from: normalizedAddress,
-                isContractInteraction: true,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        });
+        // Unique contacts (sent to or received from)
+        const contacts = new Set([
+            ...sentTransactionsList.map((tx: any) => tx.to).filter(Boolean), // Filter out null 'to' addresses
+            ...receivedTransactionsList.map((tx: any) => tx.from)
+        ]);
+        // Remove self from contacts if present
+        contacts.delete(normalizedAddress);
+        const uniqueContacts = contacts.size;
 
-        // Return compiled stats
+        // Contract interactions initiated by this wallet
+        const contractInteractions = sentTransactionsList.filter((tx: any) => tx.isContractInteraction).length;
+
+        // Unique contract addresses interacted with (initiated by this wallet)
+        const uniqueContractAddresses = new Set(
+            sentTransactionsList
+                .filter((tx: any) => tx.isContractInteraction && tx.to)
+                .map((tx: any) => tx.to!) // Use non-null assertion as we filtered
+        ).size;
+
+        // Calculate stats for specific recent periods (e.g., 30/90 days) regardless of the main 'period'
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+        const transactionsLast30Days = transactions.filter((tx: any) => tx.timestamp >= thirtyDaysAgo).length;
+        const transactionsLast90Days = transactions.filter((tx: any) => tx.timestamp >= ninetyDaysAgo).length;
+
+        // Calculate average value
+        const avgValue = totalTransactions > 0 ? totalValue / totalTransactions : 0;
+
+        // Calculate average transactions per day (if period is not 'all')
+        let averageTransactionsPerDay = 0;
+        if (!isAllTime) {
+            const days = this.getPeriodDays(period);
+            averageTransactionsPerDay = days > 0 ? totalTransactions / days : 0;
+        }
+
+
         return {
-            period,
-            totalTransactions: sentTransactions + receivedTransactions,
+            period, // The requested period
+            totalTransactions,
             sentTransactions,
             receivedTransactions,
-            uniqueContacts: Number(uniqueContacts[0]?.count || 0),
-            transactionVolume: transactionVolume._sum.value || 0,
-            contractInteractions,
-            averageTransactionsPerDay: (sentTransactions + receivedTransactions) / (this.getPeriodDays(period))
+            totalValue, // Total value transacted (sent + received)
+            avgValue, // Average value per transaction
+            netValueChange, // Example derived stat
+            uniqueContacts, // Renamed from uniqueRecipients for clarity
+            contractInteractions, // Interactions initiated by the wallet
+            uniqueContractAddresses, // Unique contracts called by the wallet
+            transactionsLast30Days, // Always calculated
+            transactionsLast90Days, // Always calculated
+            averageTransactionsPerDay: isAllTime ? null : averageTransactionsPerDay, // Only relevant for specific periods
+        };
+    }
+
+
+
+    // async getTransactionStats(
+    //     address: string,
+    //     period: string
+    // ): Promise<TransactionStats> {
+    //     const txs = await this.fetchTransactions(address, period)
+
+    //     const uniqueContacts = new Set<string>()
+    //     const uniqueContractAddresses = new Set<string>()
+    //     const uniqueRecipients = new Set<string>()
+
+    //     for (const tx of txs) {
+    //         if (tx.to) uniqueRecipients.add(tx.to.toLowerCase())
+    //     }
+
+    //     return {
+    //         period,
+    //         totalTransactions: txs.length,
+    //         sentTransactions,
+    //         receivedTransactions,
+    //         totalValue,
+    //         avgValue,
+    //         netValueChange,
+    //         uniqueContacts: uniqueContacts.size,
+    //         contractInteractions,
+    //         uniqueContractAddresses: uniqueContractAddresses.size,
+    //         transactionsLast30Days,
+    //         transactionsLast90Days,
+    //         averageTransactionsPerDay,
+    //         uniqueRecipients: uniqueRecipients.size,
+    //     }
+    // }
+
+    /**
+     * Analyzes transactions for patterns and insights.
+     * Currently, it returns the same as getTransactionStats but could be expanded.
+     */
+    async analyzeTransactions(walletAddress: string, period: string = 'all') {
+        // For now, analysis is the same as stats. Can be expanded later.
+        const stats = await this.getTransactionStats(walletAddress, period);
+
+        // Example: Add a simple activity classification
+        let activityLevel = 'low';
+        if (stats.transactionsLast30Days > 50) activityLevel = 'high';
+        else if (stats.transactionsLast30Days > 10) activityLevel = 'medium';
+
+        return {
+            ...stats,
+            // Add more derived insights here
+            activityLevel, // e.g., 'low', 'medium', 'high'
+            // potential_sybil_risk: calculateSybilRisk(stats), // Example future analysis
         };
     }
 
     async syncWalletTransactions(walletAddress: string) {
-        // Convert address to lowercase for consistency
         const normalizedAddress = walletAddress.toLowerCase();
+        const jobId = `sync-${normalizedAddress.substring(0, 8)}-${Date.now()}`; // Generate an ID
 
         try {
-            // Fetch transactions from blockchain
             const transactions = await fetchTransactions(normalizedAddress);
+            let count = 0;
 
-            // Skip if no transactions found
             if (!transactions || transactions.length === 0) {
-                return { success: true, message: 'No transactions found' };
+                console.log(`No transactions found via API for ${normalizedAddress}`);
+                return { success: true, message: 'No new transactions found via API', id: jobId };
             }
 
-            // Process and save transactions
-            for (const tx of transactions) {
-                // Check if transaction already exists
-                const existingTx = await prisma.transaction.findUnique({
+            console.log(`Fetched ${transactions.length} transactions via API for ${normalizedAddress}. Processing...`);
+
+
+            const existingHashes = new Set(
+                (await prisma.transaction.findMany({
                     where: {
-                        hash: tx.hash
+                        OR: [
+                            { from: normalizedAddress },
+                            { to: normalizedAddress }
+                        ]
+                    },
+                    select: { hash: true }
+                })).map((t: any) => t.hash)
+            );
+
+
+            const transactionsToCreate = [];
+
+            for (const tx of transactions) {
+                if (!existingHashes.has(tx.hash)) {
+                    const isContractInteraction = tx.input && tx.input !== '0x';
+                    const toAddress = tx.to ? tx.to.toLowerCase() : null; // Handle null 'to' (contract creation)
+
+                    // Basic validation
+                    if (!tx.hash || !tx.from || !tx.blockNumber || !tx.timeStamp) {
+                        console.warn(`Skipping invalid transaction data for ${normalizedAddress}:`, tx);
+                        continue;
                     }
-                });
 
-                // Skip if transaction already exists
-                if (existingTx) continue;
 
-                // Determine if it's a contract interaction
-                const isContractInteraction = tx.input && tx.input !== '0x';
-
-                // Save transaction
-                await prisma.transaction.create({
-                    data: {
+                    transactionsToCreate.push({
                         hash: tx.hash,
                         from: tx.from.toLowerCase(),
-                        to: tx.to ? tx.to.toLowerCase() : null,
-                        value: parseFloat(tx.value),
+                        to: toAddress,
+                        // Ensure value is parsed correctly, handle potential large numbers if necessary
+                        value: parseFloat(tx.value || '0'), // Use parseFloat, default to 0
                         gasUsed: parseInt(tx.gasUsed || '0'),
                         gasPrice: parseFloat(tx.gasPrice || '0'),
                         timestamp: new Date(parseInt(tx.timeStamp) * 1000),
                         blockNumber: parseInt(tx.blockNumber),
                         isContractInteraction,
                         status: tx.isError === '0' ? 'success' : 'failed',
-                        transactionFee: parseFloat(tx.gasUsed || '0') * parseFloat(tx.gasPrice || '0')
-                    }
-                });
+                        // Calculate transaction fee safely
+                        transactionFee: (parseInt(tx.gasUsed || '0') * parseFloat(tx.gasPrice || '0')) / 1e18 // Example: Convert from Wei to Ether if needed
+                    });
+                    count++;
+                }
             }
 
-            return { success: true, count: transactions.length };
+
+            if (transactionsToCreate.length > 0) {
+                await prisma.transaction.createMany({
+                    data: transactionsToCreate,
+                    skipDuplicates: true, // Although we checked, this adds safety
+                });
+                console.log(`Saved ${count} new transactions for ${normalizedAddress}`);
+                return { success: true, count, id: jobId };
+            } else {
+                console.log(`No new transactions to save for ${normalizedAddress}`);
+                return { success: true, message: 'No new transactions to save', id: jobId };
+            }
         } catch (error) {
-            console.error('Error syncing wallet transactions:', error);
-            throw new ApiError(500, 'Failed to sync wallet transactions');
+            console.error(`Error syncing transactions for ${normalizedAddress} (Job ID: ${jobId}):`, error);
+            // Don't re-throw ApiError here, just log and return failure
+            return { success: false, message: `Failed to sync transactions: ${error instanceof Error ? error.message : 'Unknown error'}`, id: jobId };
         }
     }
 
@@ -279,8 +345,14 @@ export class TransactionService {
     // Helper methods
     private getStartDateFromPeriod(period: string): Date {
         const now = new Date();
+        // Handle 'all' case - return a very old date or handle differently
+        if (period === 'all') return new Date(0); // Start of epoch
+
         const value = parseInt(period.slice(0, -1));
         const unit = period.slice(-1).toLowerCase();
+
+        if (isNaN(value)) throw new ApiError(400, `Invalid period value: ${period}`);
+
 
         switch (unit) {
             case 'd': // days
@@ -292,25 +364,25 @@ export class TransactionService {
             case 'y': // years
                 return new Date(now.setFullYear(now.getFullYear() - value));
             default:
-                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y"`);
+                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y" or "all"`);
         }
     }
-
     private getPeriodDays(period: string): number {
+        if (period === 'all') return Infinity; // Or handle as needed
+
         const value = parseInt(period.slice(0, -1));
         const unit = period.slice(-1).toLowerCase();
 
+        if (isNaN(value)) throw new ApiError(400, `Invalid period value: ${period}`);
+
+
         switch (unit) {
-            case 'd': // days
-                return value;
-            case 'w': // weeks
-                return value * 7;
-            case 'm': // months (approximate)
-                return value * 30;
-            case 'y': // years (approximate)
-                return value * 365;
+            case 'd': return value;
+            case 'w': return value * 7;
+            case 'm': return value * 30; // Approximation
+            case 'y': return value * 365; // Approximation
             default:
-                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y"`);
+                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y" or "all"`);
         }
     }
 }

@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/api-error';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { config } from '../config/config';
 
 export const errorMiddleware = (
     err: Error | ApiError,

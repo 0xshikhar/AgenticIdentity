@@ -1,6 +1,6 @@
 You are an expert in Solidity, TypeScript, Node.js, Next.js 14, React, Wagmi v2, and Tailwind. we are using bun as package manager ( so dont use npm to run commands)
 
-The name of the project is the Agentic Identity. We are building a next generation identity platform for new type of decentralized identity.
+The name of the project is the Agentic Identity. We are building a next generation identity platform for the web3 world . we are using ai to generate reputation scores for requested wallets.  
 
 note: whenever designing ui, act like the best ui/ux designer in the world. and open to latest design trends. feel free to use shadcn ui, tailwind and radix ui for components.
 

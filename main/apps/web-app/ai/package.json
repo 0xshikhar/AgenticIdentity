@@ -1,0 +1,25 @@
+{
+    "name": "rootstock-reputation-ai",
+    "version": "1.0.0",
+    "description": "AI components for Rootstock reputation scoring system",
+    "main": "index.js",
+    "scripts": {
+        "train": "ts-node training/train.ts",
+        "evaluate": "ts-node training/evaluate.ts",
+        "extract-features": "ts-node features/extract.ts",
+        "generate-scores": "ts-node inference/generate.ts"
+    },
+    "dependencies": {
+        "@tensorflow/tfjs-node": "^4.2.0",
+        "@types/node": "^18.15.11",
+        "csv-parser": "^3.0.0",
+        "dotenv": "^16.0.3",
+        "ethers": "^6.3.0",
+        "fast-csv": "^4.3.6",
+        "ml-regression": "^5.0.0",
+        "node-fetch": "^3.3.1",
+        "prisma": "^4.13.0",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.0.4"
+    }
+}

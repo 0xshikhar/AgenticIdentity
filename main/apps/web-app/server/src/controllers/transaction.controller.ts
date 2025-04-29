@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TransactionService } from '../services/transaction.service';
 import { ApiError } from '../utils/api-error';
-import { validateAddress } from '../utils/blockchain';
+import { validateAddress } from '../utils/blockchain'
 
 export class TransactionController {
     private transactionService: TransactionService;
@@ -85,10 +85,14 @@ export class TransactionController {
 
             const syncJob = await this.transactionService.syncWalletTransactions(walletAddress);
 
+            if (!syncJob.success) {
+                throw new ApiError(500, syncJob.message || 'Transaction sync failed');
+            }
+
             res.status(202).json({
                 success: true,
-                message: 'Transaction sync job started',
-                jobId: syncJob.id
+                message: syncJob.message || 'Transaction sync job started',
+                jobId: syncJob.id || null
             });
         } catch (error) {
             next(error);

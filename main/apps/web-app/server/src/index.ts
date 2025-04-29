@@ -7,7 +7,7 @@ import { config } from './config/config';
 import { errorMiddleware } from './middleware/error.middleware';
 import { loggerMiddleware } from './middleware/logger.middleware';
 import { scoreRoutes } from './routes/score.routes';
-import { transactionRoutes } from './routes/transaction.routes'; 
+import { transactionRoutes } from './routes/transaction.routes';
 import { walletRoutes } from './routes/wallet.routes';
 import { PrismaClient } from '@prisma/client';
 
