@@ -6,7 +6,7 @@ import Navbar from "@/components/navigation/navbar"
 import "@rainbow-me/rainbowkit/styles.css"
 import { Providers } from "./providers"
 import { Toaster } from 'sonner'
-
+import "@/lib/polyfills"
 
 const inter = Inter({ subsets: ["latin"] })
 

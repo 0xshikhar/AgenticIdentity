@@ -217,42 +217,60 @@ export default function HomePage() {
         }
     }
 
-    const mintNebulaID = async () => {
+    const mintAgenticID = async () => {
         try {
+            // Define verification status
+            const ensVerfStatus = ensVerified !== null;
+            const faceVerfStatus = faceVerificationData?.success || false;
+            const twitterVerfStatus = true; // Update based on your Twitter verification logic
+            
+            // Calculate wallet score or use the one fetched from API
+            const finalWalletScore = walletScore || 0;
+            
+            // For now, we're setting a default Farcaster score
+            const farcasterScore = 0;
+            
             // @ts-ignore
-            const tx = await contract.mintNebulaID(
-                true, // twitterVerified
-                worldcoinVerified, // humanVerified (initially false)
-                nationality, // nationality (1 for Indian)
-                1, // healthStatus (1 for Fit)
-                750, // creditScore (1 for Good)
-                92 // walletScore
-            )
-            await tx.wait()
-            console.log("AgenticID minted successfully")
-            const userTokenId = await contract.getUserTokenId(address)
-            setTokenId(userTokenId.toString())
+            const tx = await contract.mintAgenticID(
+                ensVerfStatus, // ENS verified
+                faceVerfStatus, // Face verified
+                twitterVerfStatus, // Twitter verified
+                worldcoinVerified, // Worldcoin verified (human verification)
+                anonAadhaar.status === "logged-in" ? "Indian" : "Unspecified", // Nationality as string
+                finalWalletScore, // Wallet score
+                farcasterScore // Farcaster score
+            );
+            
+            await tx.wait();
+            toast.success("AgenticID minted successfully");
+            
+            const userTokenId = await contract.getUserTokenId(address);
+            setTokenId(userTokenId.toString());
         } catch (error) {
-            console.error("Error minting AgenticID:", error)
+            console.error("Error minting AgenticID:", error);
+            toast.error("Failed to mint AgenticID");
         }
-    }
+    };
 
     const getIdentity = async () => {
-        if (!contract || !tokenId) return
+        if (!contract || !tokenId) return;
         try {
-            const identityData = await contract.getIdentity(tokenId)
+            const identityData = await contract.getIdentity(tokenId);
             setIdentity({
+                ensVerified: identityData.ensVerified,
+                faceVerified: identityData.faceVerified,
                 twitterVerified: identityData.twitterVerified,
-                humanVerified: identityData.humanVerified,
-                nationality: ["Unspecified", "Indian", "US"][identityData.nationality],
-                healthStatus: ["Unspecified", "Fit", "Unfit"][identityData.healthStatus],
-                creditScore: ["Unspecified", "Good", "Bad"][identityData.creditScore],
-                walletScore: identityData.walletScore.toString()
-            })
+                worldcoinVerified: identityData.worldcoinVerified,
+                nationality: identityData.nationality,
+                walletScore: identityData.walletScore.toString(),
+                farcasterScore: identityData.farcasterScore.toString(),
+                lastUpdated: new Date(Number(identityData.lastUpdated) * 1000).toLocaleString()
+            });
         } catch (error) {
-            console.error("Error getting identity:", error)
+            console.error("Error getting identity:", error);
+            toast.error("Failed to fetch identity data");
         }
-    }
+    };
 
     // Add handler for face verification completion
     const handleFaceVerificationComplete = (data: FaceVerificationData) => {
@@ -612,7 +630,7 @@ export default function HomePage() {
 
                         {!tokenId ? (
                             <button
-                                onClick={mintNebulaID}
+                                onClick={mintAgenticID}
                                 className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
                             >
                                 Mint Your AgenticID
@@ -630,12 +648,34 @@ export default function HomePage() {
                             <div className="mt-6 p-5 bg-white rounded-xl shadow-md w-full max-w-md">
                                 <h2 className="text-xl font-semibold mb-3">Your AgenticID Identity:</h2>
                                 <div className="space-y-2">
-                                    <p>Twitter Verified: {identity.twitterVerified.toString()}</p>
-                                    <p>Human Verified: {identity.humanVerified.toString()}</p>
-                                    <p>Nationality: {identity.nationality}</p>
-                                    <p>Health Status: {identity.healthStatus}</p>
-                                    <p>Credit Score: {identity.creditScore}</p>
-                                    <p>Wallet Score: {identity.walletScore}</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">ENS Verified:</span>
+                                        <span className={identity.ensVerified ? "text-green-600" : "text-red-600"}>
+                                            {identity.ensVerified ? "Yes" : "No"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">Face Verified:</span>
+                                        <span className={identity.faceVerified ? "text-green-600" : "text-red-600"}>
+                                            {identity.faceVerified ? "Yes" : "No"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">Twitter Verified:</span>
+                                        <span className={identity.twitterVerified ? "text-green-600" : "text-red-600"}>
+                                            {identity.twitterVerified ? "Yes" : "No"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">Worldcoin Verified:</span>
+                                        <span className={identity.worldcoinVerified ? "text-green-600" : "text-red-600"}>
+                                            {identity.worldcoinVerified ? "Yes" : "No"}
+                                        </span>
+                                    </div>
+                                    <p><span className="font-medium">Nationality:</span> {identity.nationality}</p>
+                                    <p><span className="font-medium">Wallet Score:</span> {identity.walletScore}/100</p>
+                                    <p><span className="font-medium">Farcaster Score:</span> {identity.farcasterScore}/100</p>
+                                    <p><span className="font-medium">Last Updated:</span> {identity.lastUpdated}</p>
                                 </div>
                             </div>
                         )}

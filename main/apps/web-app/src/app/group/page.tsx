@@ -3,7 +3,7 @@
 import { Identity } from "@semaphore-protocol/core"
 import { useRouter } from "next/navigation"
 import { useCallback, useContext, useEffect, useState } from "react"
-import Review from "../../../../contracts/artifacts/contracts/Review.sol/Review.json"
+import Review from "../../../contract-artifacts/Review.json"
 import Stepper from "@/components/Stepper"
 import LogsContext from "@/context/LogsContext"
 import SemaphoreContext from "@/context/SemaphoreContext"

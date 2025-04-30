@@ -1,6 +1,6 @@
 import { Contract, InfuraProvider, JsonRpcProvider, Wallet } from "ethers"
 import { NextRequest } from "next/server"
-import Review from "../../../../../contracts/artifacts/contracts/Review.sol/Review.json"
+import Review from "../../../../contract-artifacts/Review.json"
 
 export async function POST(req: NextRequest) {
     if (typeof process.env.NEXT_PUBLIC_REVIEW_CONTRACT_ADDRESS !== "string") {
