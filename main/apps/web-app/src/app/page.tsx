@@ -14,9 +14,9 @@ import { WalletScore } from "@/context/WalletScore"
 import { MdOutlinePendingActions } from "react-icons/md"
 import { MdVerified } from "react-icons/md"
 import { AnonAadhaarProof, LogInWithAnonAadhaar, useAnonAadhaar, useProver } from "@anon-aadhaar/react"
-import { NEBULAID_ADDRESS } from "@/lib/contract"
+import { IDENTITY_ADDRESS } from "@/lib/contract"
 import AgenticIDNFT from "../../../contracts/artifacts/contracts/AgenticID.sol/AgenticIDNFT.json"
-import { useAccount, useEnsName } from 'wagmi';
+import { useAccount, useEnsName, useEnsAvatar } from 'wagmi';
 import { signMessage } from '@wagmi/core'
 import config from '@/app/providers'
 import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethers"
@@ -25,6 +25,7 @@ import FaceButton from "@/components/FaceButton"
 import { FaceVerificationData } from '@/components/FaceButton'
 import { toast } from 'sonner'
 import axios from "axios"
+
 
 type HomeProps = {
     setUseTestAadhaar: (state: boolean) => void
@@ -35,19 +36,31 @@ export default function HomePage() {
     const router = useRouter()
     const { setLogs } = useContext(LogsContext)
     const { address, isConnected } = useAccount()
-    // const { data: ensName } = useEnsName({ address })
-    // const { data: ensAvatar } = useEnsAvatar({ name: ensName! })
-    // const { disconnect } = useDisconnect()
-    const { data: ensName, isError, isLoading } = useEnsName({ address, chainId: 1 });
+    const { data: ensName, isError: ensError, isLoading: ensLoading } = useEnsName({
+        address,
+        chainId: 1
+    });
+    const { data: ensAvatar } = useEnsAvatar({
+        name: ensName || undefined,
+        chainId: 1
+    });
     const [displayName, setDisplayName] = useState<string | null>(null);
 
-    const [ensVerified, setEnsVerified] = useState(null)
+    const [fetchingEns, setFetchingEns] = useState(false);
+    const [ensData, setEnsData] = useState({
+        name: null,
+        avatar: null,
+        error: null,
+        status: 'idle' // idle, loading, success, error
+    });
+    const [ensVerified, setEnsVerified] = useState(null);
 
     const [provider, setProvider] = useState(null)
     const ethereumPrivateKey = process.env.ETHEREUM_PRIVATE_KEY;
     const ethereumNetwork = process.env.NEXT_PUBLIC_DEFAULT_NETWORK
     const alchemlyApiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
     const contractAddress = process.env.NEXT_PUBLIC_REVIEW_CONTRACT_ADDRESS
+    const ethereumMainnetAlchemyApiKey = process.env.NEXT_PUBLIC_ETHEREUM_MAINNET_ALCHEMY_API_KEY
 
     const { _reviews, _reviewers } = useContext(SemaphoreContext)
     const [_identity, _setIdentity] = useState<Identity>()
@@ -60,7 +73,7 @@ export default function HomePage() {
     const [anonAadhaar] = useAnonAadhaar()
     const [, latestProof] = useProver()
 
-    const [contract, setContract] = useState(NEBULAID_ADDRESS)
+    const [contract, setContract] = useState(IDENTITY_ADDRESS)
     const [loading, setLoading] = useState(true)
     const [tokenId, setTokenId] = useState(null)
     const [identity, setIdentity] = useState(null)
@@ -80,64 +93,75 @@ export default function HomePage() {
     const [showDebugInfo, setShowDebugInfo] = useState(false);
     const [debugData, setDebugData] = useState<any>(null);
 
-    useEffect(() => {
-        const ensName = async () => {
-            const ensName = await publicClient.getEnsName({
-                address: address,
-            })
-            if (ensName) {
-                setDisplayName(ensName);
-            } else if (address) {
-                setDisplayName(address); // If no ENS name, display address
-            }
-        }
-        ensName()
-    }, [ensName, address]);
+    // useEffect(() => {
+    //     if (address && ensName) {
+    //         setDisplayName(ensName);
+    //         console.log("ENS data:", ensName, ensAvatar);
+    //     } else if (address) {
+    //         // If there's no ENS name, use the truncated address
+    //         setDisplayName(address.slice(0, 6) + '...' + address.slice(-4));
+    //     } else {
+    //         setDisplayName(null);
+    //     }
+    // }, [ensName, ensAvatar, address]);
 
     useEffect(() => {
         const init = async () => {
-            if (typeof window.ethereum !== "undefined") {
-                try {
-                    // @ts-ignore
-                    if (typeof window !== "undefined" && window.ethereum) {
-                        const provider = ethereumNetwork === "localhost"
-                            ? new JsonRpcProvider("https://eth-sepolia.g.alchemy.com/v2/Kd1XQbFAa3ZboKORKFNQ9mmtcrM5PbZv")
-                            : new AlchemyProvider(ethereumNetwork, alchemlyApiKey);
-                        if (!provider) throw new Error("No Web3 Provider")
-                        // @ts-ignore
-                        setProvider(provider)
-                    }
-
-                    // @ts-ignore
-                    const signer = new Wallet(ethereumPrivateKey, provider)
-                    const contract = new ethers.Contract(
-                        NEBULAID_ADDRESS,
-                        AgenticIDNFT.abi,
-                        signer
-                    )
-                    setContract(contract as any)
-
-                    const userTokenId = await contract.getUserTokenId(address)
-                    setTokenId(userTokenId.toString())
-
-                    // const ensRest = useEnsName({ address })
-                    // console.log("ENS Name: ", ensRest)
-
-                    // setEnsNameVar(await publicClient.getEnsName({ address: address }))
-                    // console.log("ENS Name: ", ensNameVar, "Address: ", address, await publicClient.getEnsName({ address: address }))
-
-                    setLoading(false)
-                } catch (error) {
-                    console.error("An error occurred:", error)
-                    setLoading(false)
+            try {
+                // Create a more reliable provider
+                let provider;
+                if (ethereumNetwork === "localhost") {
+                    provider = new JsonRpcProvider("http://localhost:8545");
+                } else {
+                    // Default to RSK testnet or whatever your default is
+                    provider = new JsonRpcProvider("https://public-node.testnet.rsk.co");
                 }
-            } else {
-                console.log("Please install MetaMask")
-                setLoading(false)
+                
+                // Ensure provider is connected
+                await provider.getBlockNumber();
+                console.log("Provider connected successfully");
+                
+                // Only proceed if we're connected to a wallet
+                if (isConnected && address) {
+                    // For server-side contract interactions
+                    if (ethereumPrivateKey) {
+                        const signer = new Wallet(ethereumPrivateKey, provider);
+                        const contract = new Contract(
+                            IDENTITY_ADDRESS,
+                            AgenticIDNFT.abi,
+                            signer
+                        );
+                        setContract(contract);
+                        
+                        try {
+                            // Try to get token ID to verify connection works
+                            const userTokenId = await contract.getUserTokenId(address);
+                            setTokenId(userTokenId.toString());
+                            console.log("Connected to contract successfully, token ID:", userTokenId.toString());
+                        } catch (error) {
+                            console.warn("No token found for this address or contract error:", error);
+                            // This is normal for users who haven't minted yet
+                        }
+                    } else {
+                        console.warn("No private key available for server-side contract interaction");
+                    }
+                } else {
+                    console.log("Wallet not connected yet, deferring contract initialization");
+                }
+                
+                setProvider(provider);
+                setLoading(false);
+            } catch (error) {
+                console.error("Failed to initialize web3 connection:", error);
+                toast.error("Failed to connect to blockchain", {
+                    description: "Please check your network connection and try again."
+                });
+                setLoading(false);
             }
-        }
-        init()
-    }, [])
+        };
+        
+        init();
+    }, [isConnected, address]); // Re-run when wallet connection changes
 
     useEffect(() => {
         if (anonAadhaar.status === "logged-in") {
@@ -174,25 +198,81 @@ export default function HomePage() {
         [_reviewers]
     )
 
+    // Function to explicitly fetch ENS data
+    const fetchEnsData = async () => {
+        if (!isConnected || !address) {
+            toast.error('Please connect your wallet first');
+            return;
+        }
+
+        try {
+            setEnsData(prev => ({ ...prev, status: 'loading' }));
+            setFetchingEns(true);
+
+            // Use wagmi's getEnsName function directly for more control
+            const provider = new ethers.JsonRpcProvider(ethereumMainnetAlchemyApiKey);
+            const name = await provider.lookupAddress(address);
+
+            let avatar = null;
+            if (name) {
+                // If we have a name, try to get the avatar
+                const avatar = await provider.getAvatar(`${name}`)
+                console.log(avatar);
+            }
+
+            setEnsData({
+                name: name,
+                avatar: avatar,
+                error: null,
+                status: name ? 'success' : 'error'
+            });
+
+            if (!name) {
+                toast.warning('No ENS name found for this address');
+            } else {
+                console.log("Found ENS:", name, "Avatar:", avatar);
+                toast.success(`Found ENS name: ${name}`);
+            }
+        } catch (error) {
+            console.error('Error fetching ENS data:', error);
+            setEnsData({
+                name: null,
+                avatar: null,
+                error: error.message,
+                status: 'error'
+            });
+            toast.error('Failed to fetch ENS data');
+        } finally {
+            setFetchingEns(false);
+        }
+    };
+
+    // Updated verification function
     const signENSMessage = async () => {
-        if (!displayName) {
-            toast.error('Do you have an ENS name?');
+        if (!isConnected) {
+            toast.error('Please connect your wallet first');
+            return;
+        }
+
+        if (!ensData.name) {
+            toast.warning('Please fetch your ENS name first');
             return;
         }
 
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const message = `I am signing my ENS name: ${displayName} for my Nebula ID verification`;
+            const message = `I am signing my ENS name: ${ensData.name} for my Agentic ID verification`;
             console.log('message:', message);
 
             const signedMessage = await signer.signMessage(message);
             console.log('Signed message:', signedMessage);
-            setEnsVerified(signedMessage)
+            setEnsVerified(signedMessage);
 
-            // setSignedMessage(signature);
+            toast.success('ENS name successfully verified!');
         } catch (err) {
-            console.log('Failed to sign message.', err);
+            console.error('Failed to sign message.', err);
+            toast.error('Failed to verify ENS name');
         }
     };
 
@@ -219,43 +299,172 @@ export default function HomePage() {
 
     const mintAgenticID = async () => {
         try {
-            // Define verification status
+            // Check if we have a valid contract instance
+            if (!contract) {
+                toast.error("Contract not initialized", {
+                    description: "Please make sure your wallet is connected and try again."
+                });
+                return;
+            }
+            
+            // Check verification statuses
             const ensVerfStatus = ensVerified !== null;
             const faceVerfStatus = faceVerificationData?.success || false;
-            const twitterVerfStatus = true; // Update based on your Twitter verification logic
-
+            const twitterVerfStatus = false; // Assuming Twitter verification is not implemented yet
+            const worldcoinVerfStatus = worldcoinVerified;
+            const aadhaarVerfStatus = anonAadhaar.status === "logged-in";
+            
+            // Check if at least one verification is complete
+            const hasAnyVerification = ensVerfStatus || faceVerfStatus || twitterVerfStatus || 
+                                      worldcoinVerfStatus || aadhaarVerfStatus;
+            
+            if (!hasAnyVerification) {
+                toast.error("Please complete at least one verification", {
+                    description: "You need to verify at least one feature (ENS, Face, Worldcoin, or Nationality) before minting your AgenticID.",
+                    duration: 5000
+                });
+                return;
+            }
+            
+            // Start minting process
+            toast.loading("Preparing transaction...");
+            
+            // Try to get a browser provider if available for user transactions
+            let mintingContract = contract;
+            
+            if (window.ethereum) {
+                try {
+                    const browserProvider = new ethers.BrowserProvider(window.ethereum);
+                    const signer = await browserProvider.getSigner();
+                    mintingContract = new Contract(
+                        IDENTITY_ADDRESS, 
+                        AgenticIDNFT.abi,
+                        signer
+                    );
+                    console.log("Using browser wallet for transaction");
+                } catch (error) {
+                    console.warn("Could not connect browser wallet, falling back to server wallet:", error);
+                    // Continue with server wallet
+                }
+            }
+            
+            // Determine nationality string
+            const nationalityString = aadhaarVerfStatus 
+                ? "Indian" 
+                : "Unspecified";
+            
             // Calculate wallet score or use the one fetched from API
             const finalWalletScore = walletScore || 0;
-
+            
             // For now, we're setting a default Farcaster score
             const farcasterScore = 0;
 
-            // @ts-ignore
-            const tx = await contract.mintAgenticID(
-                ensVerfStatus, // ENS verified
-                faceVerfStatus, // Face verified
-                twitterVerfStatus, // Twitter verified
-                worldcoinVerified, // Worldcoin verified (human verification)
-                anonAadhaar.status === "logged-in" ? "Indian" : "Unspecified", // Nationality as string
-                finalWalletScore, // Wallet score
-                farcasterScore // Farcaster score
+            toast.loading("Waiting for wallet confirmation...");
+            
+            const tx = await mintingContract.mintAgenticID(
+                ensVerfStatus,           // ENS verified
+                faceVerfStatus,          // Face verified
+                twitterVerfStatus,       // Twitter verified (default false for now)
+                worldcoinVerfStatus,     // Worldcoin verified
+                nationalityString,       // Nationality as string
+                finalWalletScore,        // Wallet score
+                farcasterScore           // Farcaster score
             );
 
+            toast.loading("Transaction submitted, waiting for confirmation...");
+            console.log("Minting transaction submitted:", tx.hash);
+            
             await tx.wait();
-            toast.success("AgenticID minted successfully");
+            toast.dismiss();
+            toast.success("AgenticID minted successfully", {
+                description: "Your verifiable identity has been created on the blockchain!"
+            });
 
-            const userTokenId = await contract.getUserTokenId(address);
+            // Update token ID in state
+            const userTokenId = await mintingContract.getUserTokenId(address);
             setTokenId(userTokenId.toString());
+            console.log("New token ID:", userTokenId.toString());
+            
+            // Automatically fetch the newly minted identity
+            getIdentity();
         } catch (error) {
+            toast.dismiss();
             console.error("Error minting AgenticID:", error);
-            toast.error("Failed to mint AgenticID");
+            
+            // Create a more user-friendly error message
+            let errorMessage = "Failed to mint AgenticID";
+            
+            if (error.message && error.message.includes("User already has an NFT")) {
+                errorMessage = "You already have an AgenticID minted";
+                
+                // If the user already has an NFT, try to get their token ID
+                try {
+                    const userTokenId = await contract.getUserTokenId(address);
+                    if (userTokenId && userTokenId.toString() !== "0") {
+                        setTokenId(userTokenId.toString());
+                        toast.info("Retrieved your existing AgenticID", {
+                            description: "Loading your identity data now..."
+                        });
+                        // Get the identity data for the existing token
+                        getIdentity();
+                        return;
+                    }
+                } catch (fetchError) {
+                    console.error("Error fetching existing token:", fetchError);
+                }
+            } else if (error.code === 'ACTION_REJECTED') {
+                errorMessage = "Transaction rejected in your wallet";
+            } else if (error.message && error.message.includes("missing provider")) {
+                errorMessage = "Connection to blockchain failed";
+            }
+            
+            toast.error(errorMessage, {
+                description: error.reason || error.message || "Please try again or check console for details"
+            });
         }
     };
 
     const getIdentity = async () => {
-        if (!contract || !tokenId) return;
+        if (!contract) {
+            toast.error("Contract not initialized", { 
+                description: "Please make sure your wallet is connected." 
+            });
+            return;
+        }
+        
         try {
+            // If there's no tokenId, we'll try to get it from the contract first
+            if (!tokenId) {
+                try {
+                    const userTokenId = await contract.getUserTokenId(address);
+                    // If the token ID is valid (not 0), we set it and continue
+                    if (userTokenId && userTokenId.toString() !== "0") {
+                        setTokenId(userTokenId.toString());
+                        console.log("Found existing token ID:", userTokenId.toString());
+                    } else {
+                        // No token found, let's mint one
+                        console.log("No token found, initiating minting process");
+                        toast.info("You don't have an AgenticID yet", {
+                            description: "Starting the minting process now..."
+                        });
+                        await mintAgenticID();
+                        return; // mintAgenticID will call getIdentity again when done
+                    }
+                } catch (error) {
+                    console.log("Error checking token existence:", error);
+                    toast.info("You don't have an AgenticID yet", {
+                        description: "Starting the minting process now..."
+                    });
+                    await mintAgenticID();
+                    return; // mintAgenticID will call getIdentity again when done
+                }
+            }
+            
+            // If we have a tokenId, we fetch the identity data
+            toast.loading("Fetching your identity data...");
             const identityData = await contract.getIdentity(tokenId);
+            toast.dismiss();
+            
             setIdentity({
                 ensVerified: identityData.ensVerified,
                 faceVerified: identityData.faceVerified,
@@ -266,9 +475,30 @@ export default function HomePage() {
                 farcasterScore: identityData.farcasterScore.toString(),
                 lastUpdated: new Date(Number(identityData.lastUpdated) * 1000).toLocaleString()
             });
+            
+            toast.success("Identity data loaded successfully");
         } catch (error) {
             console.error("Error getting identity:", error);
-            toast.error("Failed to fetch identity data");
+            
+            // Check if the error is because the token doesn't exist
+            if (error.message && (
+                error.message.includes("Identity does not exist") || 
+                error.message.includes("nonexistent token") ||
+                error.message.includes("invalid token ID")
+            )) {
+                toast.info("Your AgenticID needs to be created", {
+                    description: "Starting the minting process now..."
+                });
+                // Clear the invalid tokenId
+                setTokenId(null);
+                // Start the minting process
+                await mintAgenticID();
+            } else {
+                // For other types of errors, show the error message
+                toast.error("Failed to fetch identity data", {
+                    description: error.reason || error.message || "Please try again later"
+                });
+            }
         }
     };
 
@@ -451,23 +681,66 @@ export default function HomePage() {
                         {/* ENS Verification Card */}
                         <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
                             <h2 className="text-xl md:text-2xl font-semibold mb-3">ENS Verification</h2>
-                            <div className="mb-4 flex-grow">
-                                {isLoading ? (
-                                    <p>Loading ENS name...</p>
-                                ) : isError ? (
-                                    <p>Seems like you don&apos;t have an ENS name :( </p>
-                                ) : displayName ? (
-                                    <p>Connected as: {displayName}</p>
+                            <div className="mb-4 flex-grow w-full">
+                                {!isConnected ? (
+                                    <p className="text-center">Please connect your wallet first</p>
+                                ) : ensData.status === 'loading' ? (
+                                    <div className="flex justify-center items-center h-24">
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                                    </div>
+                                ) : ensData.status === 'success' && ensData.name ? (
+                                    <div className="flex flex-col items-center">
+                                        <p className="font-semibold text-lg">{ensData.name}</p>
+                                        {ensData.avatar && (
+                                            <img
+                                                src={ensData.avatar}
+                                                alt={`${ensData.name} avatar`}
+                                                className="w-12 h-12 rounded-full mt-2"
+                                            />
+                                        )}
+                                        {ensVerified && (
+                                            <div className="flex items-center mt-2 text-green-500">
+                                                <MdVerified className="mr-1" />
+                                                <span>Verified</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : ensData.status === 'error' ? (
+                                    <p className="text-center text-red-500">
+                                        {ensData.error || "No ENS name found for this address"}
+                                    </p>
                                 ) : (
-                                    <p>Please connect your wallet</p>
+                                    <p className="text-center">Click &quot;Fetch ENS&quot; to check your ENS name</p>
                                 )}
                             </div>
-                            <button
-                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
-                                onClick={signENSMessage}
-                            >
-                                Verify your ENS
-                            </button>
+
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                {/* Fetch ENS Button */}
+                                <button
+                                    className="bg-gray-800 py-2 px-4 text-white rounded hover:bg-gray-700 transition-colors flex-1"
+                                    onClick={fetchEnsData}
+                                    disabled={!isConnected || fetchingEns}
+                                >
+                                    {fetchingEns ? (
+                                        <span className="flex items-center justify-center">
+                                            <span className="animate-spin h-4 w-4 mr-2 border-b-2 border-white rounded-full"></span>
+                                            Fetching...
+                                        </span>
+                                    ) : "Fetch ENS"}
+                                </button>
+
+                                {/* Verify ENS Button */}
+                                <button
+                                    className={`py-2 px-4 rounded transition-colors flex-1 ${ensVerified
+                                            ? "bg-green-500 hover:bg-green-600 text-white"
+                                            : "bg-black hover:bg-gray-800 text-white"
+                                        }`}
+                                    onClick={signENSMessage}
+                                    disabled={!isConnected || !ensData.name || fetchingEns}
+                                >
+                                    {ensVerified ? "ENS Verified ✓" : "Verify ENS"}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Wallet Score Card */}
@@ -482,7 +755,7 @@ export default function HomePage() {
                                         <div className="flex items-center gap-2 mb-3">
                                             <div
                                                 className={`w-3 h-3 rounded-full ${apiConnectionStatus === 'connected' ? 'bg-green-500' :
-                                                        apiConnectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+                                                    apiConnectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
                                                     }`}
                                             ></div>
                                             <span className="text-xs">
@@ -556,7 +829,7 @@ export default function HomePage() {
                                                 )}
                                             </>
                                         ) : (
-                                            <div className="text-sm">Click the button to calculate your score</div>
+                                            <div className="text-sm"> calculate your onchain reputation score</div>
                                         )}
                                     </>
                                 )}
@@ -633,16 +906,32 @@ export default function HomePage() {
                         {!tokenId ? (
                             <button
                                 onClick={mintAgenticID}
-                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                disabled={loading}
                             >
-                                Mint Your AgenticID
+                                {loading ? (
+                                    <span className="flex items-center">
+                                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                                        Processing...
+                                    </span>
+                                ) : (
+                                    "Mint Your AgenticID"
+                                )}
                             </button>
                         ) : (
                             <button
                                 onClick={getIdentity}
-                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
+                                className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                disabled={loading}
                             >
-                                Get Identity
+                                {loading ? (
+                                    <span className="flex items-center">
+                                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                                        Loading...
+                                    </span>
+                                ) : (
+                                    "Get Identity"
+                                )}
                             </button>
                         )}
 

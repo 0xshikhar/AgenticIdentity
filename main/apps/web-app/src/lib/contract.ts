@@ -3,7 +3,7 @@
 
 // Rootstock Mainnet
 export const GOVERNANCE_ADDRESS = "0x0b3a2D73D07eA2D5D0D0FB4Db09004f74D92767a"
-export const NEBULAID_ADDRESS = "0x419cFe85e77a0A26B9989059057318F59764F7C5"
+export const IDENTITY_ADDRESS = "0x419cFe85e77a0A26B9989059057318F59764F7C5"
 
 // export const publicClient = createPublicClient({
 //     chain: mainnet,

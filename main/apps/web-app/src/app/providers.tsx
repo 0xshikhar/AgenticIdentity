@@ -14,14 +14,14 @@ import {
 import { WagmiProvider } from "wagmi"
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query"
 import "dotenv/config"
-import { sepolia, rootstock, rootstockTestnet, mainnet} from "viem/chains"
+import { rootstock, rootstockTestnet, mainnet} from "viem/chains"
 
 const projectId = "9811958bd307518b364ff7178034c435"
 
 export const config = getDefaultConfig({
     appName: "AgenticID",
     projectId: projectId,
-    chains: [rootstockTestnet, rootstock, sepolia, mainnet],
+    chains: [rootstockTestnet, rootstock, mainnet],
     ssr: true // If your dApp uses server side rendering (SSR)
 })
 
