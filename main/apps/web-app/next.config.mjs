@@ -2,6 +2,7 @@
     
 import withPWA from "next-pwa"
 import { config } from "dotenv"
+import { ProvidePlugin } from 'webpack';
 
 // Only use fs in Node.js environment (not during client-side)
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -44,11 +45,27 @@ const nextConfig = withPWA({
                 zlib: false,
                 path: false,
                 os: false,
-                // buffer: require.resolve('buffer/'),
+                buffer: false,
                 encoding: false
             }
         }
         
+        // Provide the buffer polyfill globally
+        config.plugins.push(
+            new ProvidePlugin({
+                Buffer: ['buffer', 'Buffer'],
+            })
+        );
+
+        // Add rule to handle .wasm files if needed by anon-aadhaar's dependencies (like snarkjs)
+        config.module.rules.push({
+             test: /\.wasm$/,
+             type: "asset/resource" // or "javascript/auto" depending on usage
+        });
+
+        // Required for snarkjs and other crypto libraries potentially used by anon-aadhaar
+        config.experiments = { ...config.experiments, asyncWebAssembly: true, layers: true };
+
         return config
     }
 })

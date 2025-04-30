@@ -3,8 +3,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi"
 // Remove ethers imports if no longer needed elsewhere, keep JsonRpcProvider if needed for other things
 // import { ethers, InfuraProvider, JsonRpcProvider, Wallet } from "ethers"
-import { GOVERNANCE_ADDRESS } from "@/lib/contract"
-import { IDENTITY_ADDRESS } from "@/lib/contract" // Import the identity contract address
+import { GOVERNANCE_ADDRESS, IDENTITY_ADDRESS } from "@/lib/contract" 
 import GovernanceABI from "../../../../contracts/artifacts/contracts/Governance.sol/Governance.json"
 import AgenticIDNFT from "../../../../contracts/artifacts/contracts/AgenticID.sol/AgenticIDNFT.json" // Import AgenticID ABI
 import { toast } from "sonner"
@@ -91,7 +90,7 @@ const Governance: React.FC = () => {
     const { isLoading: isConfirmingExecute, isSuccess: isExecuteSuccess } = useWaitForTransactionReceipt({ hash: executeTxHash })
 
     // Add a new state for NFT ownership
-    const [hasAgenticID, setHasAgenticID] = useState(false)
+    const [hasAgenticID, setHasAgenticID] = useState<boolean>(false)
     const [tokenId, setTokenId] = useState<string | null>(null)
     const [checkingEligibility, setCheckingEligibility] = useState(false)
 
@@ -406,11 +405,10 @@ const Governance: React.FC = () => {
     const userIsEligible = isEligible || (directEligibilityData === true);
 
     return (
-        <div className="container mx-auto px-4 md:px-16 lg:px-32 py-16"> {/* Responsive padding */}
+        <div className="container mx-auto px-4 md:px-16 lg:px-32 py-16">
             <h1 className="text-3xl font-bold mb-6">Governance</h1>
 
-            {/* NFT Ownership Status */}
-            {!hasAgenticID && (
+            {Boolean(!hasAgenticID) && (
                 <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
                     <h3 className="text-lg font-medium text-yellow-800 mb-2">AgenticID Required</h3>
                     <p className="text-yellow-700">You need to mint an AgenticID NFT before you can participate in governance.</p>
@@ -480,8 +478,7 @@ const Governance: React.FC = () => {
                 )}
             </div>
 
-            {/* Create Proposal Section (Only if Member) */}
-            {isMember && (
+            {hasAgenticID && Boolean(isMember) && (
                 <form onSubmit={createProposal} className="mb-8 bg-gray-50 p-6 rounded-lg shadow-sm border">
                     <h3 className="text-xl font-semibold mb-4">Create New Proposal</h3>
                     <input
@@ -535,22 +532,22 @@ const Governance: React.FC = () => {
                                 <p className="text-sm text-gray-500"><span className="font-medium">Ends:</span> {proposal.endTime.toLocaleString()}</p>
                                 <p className="text-sm text-gray-500"><span className="font-medium">Proposer:</span> {proposal.proposer.substring(0, 6)}...{proposal.proposer.substring(proposal.proposer.length - 4)}</p>
 
-                                {!proposal.executed && new Date() < proposal.endTime && isMember && (
+                                {!proposal.executed && new Date() < proposal.endTime && Boolean(isMember) && (
                                     <div className="mt-3 pt-3 border-t">
-                                        {/* Ensure the content inside is valid ReactNode */}
-                                        <button
-                                            key={proposal.id.toString()}
-                                            onClick={() => vote(proposal.id, true)}
-                                            className="bg-green-500 text-white px-4 py-2 rounded"
-                                        >
-                                            Vote For
-                                        </button>
-                                        <button
-                                            onClick={() => vote(proposal.id, false)}
-                                            className="bg-red-500 text-white px-4 py-2 rounded"
-                                        >
-                                            Vote Against
-                                        </button>
+                                        <React.Fragment key={proposal.id.toString()}>
+                                            <button
+                                                onClick={() => vote(proposal.id, true)}
+                                                className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+                                            >
+                                                Vote For
+                                            </button>
+                                            <button
+                                                onClick={() => vote(proposal.id, false)}
+                                                className="bg-red-500 text-white px-4 py-2 rounded"
+                                            >
+                                                Vote Against
+                                            </button>
+                                        </React.Fragment>
                                     </div>
                                 )}
 
@@ -582,6 +579,7 @@ const Governance: React.FC = () => {
                 )}
             </div>
         </div>
+
     )
 }
 

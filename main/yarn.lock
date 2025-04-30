@@ -36,9 +36,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@anon-aadhaar/core@npm:2.4.0":
-  version: 2.4.0
-  resolution: "@anon-aadhaar/core@npm:2.4.0"
+"@anon-aadhaar/core@npm:2.4.3":
+  version: 2.4.3
+  resolution: "@anon-aadhaar/core@npm:2.4.3"
   dependencies:
     "@pcd/pcd-types": "npm:^0.10.0"
     "@pcd/tsconfig": "npm:^0.6.0"
@@ -56,15 +56,15 @@ __metadata:
     uuid: "npm:^9.0.0"
     valid-url: "npm:^1.0.9"
     web-worker: "npm:1.2.0"
-  checksum: 10/7e9d14111e08613b4e6e700b2868c76856632127830f7f373bb11282e570c2ef2553faa4f39f016880cd0c3ee1ba3e720a54fb7a04a347fc102fc305699d2be0
+  checksum: 10/6daa8033de5f16e1e22eb6b9fc4b0d3ed990579601aa3939aa1166da29c06a157ab861186c8746488809ff1d53a5eb135da2cde210906ac81c1ac4bf3fda1df5
   languageName: node
   linkType: hard
 
-"@anon-aadhaar/react@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "@anon-aadhaar/react@npm:2.4.0"
+"@anon-aadhaar/react@npm:^2.4.3":
+  version: 2.4.3
+  resolution: "@anon-aadhaar/react@npm:2.4.3"
   dependencies:
-    "@anon-aadhaar/core": "npm:2.4.0"
+    "@anon-aadhaar/core": "npm:2.4.3"
     "@pcd/pcd-types": "npm:^0.10.0"
     "@types/json-bigint": "npm:^1.0.1"
     "@types/pako": "npm:^2.0.0"
@@ -77,7 +77,6 @@ __metadata:
     buffer: "npm:^6.0.3"
     jsqr: "npm:^1.4.0"
     node-forge: "npm:^1.3.1"
-    react-device-detect: "npm:^2.2.3"
     react-dom: "npm:^18.2.0"
     react-icons: "npm:^5.0.1"
     react-qr-reader: "npm:^3.0.0-beta-1"
@@ -85,7 +84,7 @@ __metadata:
     webfontloader: "npm:^1.6.28"
   peerDependencies:
     react: ^18.2.0
-  checksum: 10/d8d9fac04066f716f357dc288cf6bb9187c4177416952a95b4e49b33c414d9dab2499650eca4b477a83c1d43a062ed293db4d1ebb780b009f77b60427a1bf5e7
+  checksum: 10/0c4b4fb169f76ea86517ed33466747588d6be1ac52fdee2e1e80824553d0e8dd5dcdc78843ba095237b8c69eab25ec4cc13ce583c6d1c86a4a646081d054dbf6
   languageName: node
   linkType: hard
 
@@ -4268,7 +4267,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@semaphore-protocol/cli-template-monorepo-ethers@workspace:."
   dependencies:
-    "@anon-aadhaar/react": "npm:^2.4.0"
+    "@anon-aadhaar/react": "npm:^2.4.3"
     prettier: "npm:^3.2.5"
   languageName: unknown
   linkType: soft
@@ -14799,7 +14798,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "monorepo-ethers-web-app@workspace:apps/web-app"
   dependencies:
-    "@anon-aadhaar/react": "npm:^2.4.0"
+    "@anon-aadhaar/react": "npm:^2.4.3"
     "@ensdomains/ensjs": "npm:4.0.1-alpha.0"
     "@rainbow-me/rainbowkit": "npm:^2.1.3"
     "@semaphore-protocol/core": "npm:4.0.3"
@@ -16522,18 +16521,6 @@ __metadata:
   bin:
     rc: ./cli.js
   checksum: 10/5c4d72ae7eec44357171585938c85ce066da8ca79146b5635baf3d55d74584c92575fa4e2c9eac03efbed3b46a0b2e7c30634c012b4b4fa40d654353d3c163eb
-  languageName: node
-  linkType: hard
-
-"react-device-detect@npm:^2.2.3":
-  version: 2.2.3
-  resolution: "react-device-detect@npm:2.2.3"
-  dependencies:
-    ua-parser-js: "npm:^1.0.33"
-  peerDependencies:
-    react: ">= 0.14.0"
-    react-dom: ">= 0.14.0"
-  checksum: 10/7152e2b216b3bb6fd75c7859d3441b89658695c629a13c5d374f076756705650be585d5c4dc19d9d34908ef1b61f19b52f1055d74dd7104b77d1b6f897ee09e0
   languageName: node
   linkType: hard
 
@@ -19458,7 +19445,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ua-parser-js@npm:^1.0.33, ua-parser-js@npm:^1.0.37":
+"ua-parser-js@npm:^1.0.37":
   version: 1.0.39
   resolution: "ua-parser-js@npm:1.0.39"
   bin:

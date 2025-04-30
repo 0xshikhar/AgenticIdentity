@@ -28,6 +28,6 @@
         "prettier": "^3.2.5"
     },
     "dependencies": {
-        "@anon-aadhaar/react": "^2.4.0"
+        "@anon-aadhaar/react": "^2.4.3"
     }
 }

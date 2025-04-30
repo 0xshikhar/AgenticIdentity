@@ -9,7 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@anon-aadhaar/react": "^2.4.0",
+        "@anon-aadhaar/react": "^2.4.3",
         "@ensdomains/ensjs": "4.0.1-alpha.0",
         "@rainbow-me/rainbowkit": "^2.1.3",
         "@semaphore-protocol/core": "4.0.3",

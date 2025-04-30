@@ -938,6 +938,8 @@ export default function HomePage() {
                         {identity && (
                             <div className="mt-6 p-5 bg-white rounded-xl shadow-md w-full max-w-md">
                                 <h2 className="text-xl font-semibold mb-3">Your AgenticID Identity:</h2>
+                                {/* nft image */}
+                                <img src={i} alt="AgenticID" className="w-full h-40 object-cover rounded-lg mb-4" />
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium">ENS Verified:</span>

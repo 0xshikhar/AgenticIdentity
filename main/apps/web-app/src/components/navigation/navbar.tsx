@@ -4,11 +4,8 @@ import Link from "next/link"
 import Router, { useRouter } from "next/navigation"
 import React, { useState } from "react"
 import Logo from "../../../public/nebula.png"
-import { AiOutlineSearch } from "react-icons/ai"
-import { CgProfile } from "react-icons/cg"
-import { MdOutlineAccountBalanceWallet } from "react-icons/md"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { FaFaucetDrip } from "react-icons/fa6"
+
 
 const style = {
     wrapper: `flex flex-wrap items-center justify-between bg-white w-screen px-[1.2rem] py-[0.8rem] `,
@@ -75,7 +72,7 @@ export default function Navbar() {
                     <div
                         className={style.headerItem}
                         onClick={() => {
-                            router.push("/goverance")
+                            router.push("/governance")
                         }}
                     >
                         Goverance
