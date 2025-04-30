@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { WalletFeatures } from '../features/FeatureExtractor'
+import { WalletFeatures } from '../features/FeatureExtractor.js'
 
 export interface EnhancedWalletFeatures extends WalletFeatures {
     normalizedFeatures: number[]

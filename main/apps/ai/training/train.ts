@@ -1,8 +1,8 @@
 import * as tf from '@tensorflow/tfjs-node'
 import path from 'path'
-import { ReputationModel } from '../models/ReputationModel'
-import { DatasetManager } from './DatasetManager'
-import { saveModelConfig } from '../utils/model-utils'
+import { ReputationModel } from '../models/ReputationModel.js'
+import { DatasetManager } from './DatasetManager.js'
+import { saveModelConfig } from '../utils/model-utils.js'  
 
 async function trainModel() {
     // Configuration

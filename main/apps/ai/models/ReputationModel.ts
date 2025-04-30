@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs-node'
-import { saveModel, loadModel } from '../utils/model-utils'
+import { saveModel, loadModel } from '../utils/model-utils.js'
 
 export interface ModelConfig {
     inputFeatures: number
@@ -46,7 +46,7 @@ export class ReputationModel {
 
         // Compile model
         model.compile({
-            optimizer: tf.train.adam(this.config.learningRate),
+            optimizer: tf.train.adam(this.config.learningRate),     
             loss: 'meanSquaredError',
             metrics: ['mse', 'mae']
         })
@@ -55,8 +55,8 @@ export class ReputationModel {
     }
 
     async train(
-        xTrain: tf.Tensor2D,
-        yTrain: tf.Tensor2D,
+        xTrain: tf.ITensor,
+        yTrain: tf.ITensor,
         epochs: number = 50,
         batchSize: number = 32,
         validationSplit: number = 0.2
@@ -67,7 +67,7 @@ export class ReputationModel {
             batchSize,
             validationSplit,
             callbacks: {
-                onEpochEnd: (epoch, logs) => {
+                onEpochEnd: (epoch: number, logs: any) => {
                     console.log(`Epoch ${epoch + 1} - loss: ${logs?.loss.toFixed(4)}, val_loss: ${logs?.val_loss.toFixed(4)}`)
                 }
             }
@@ -76,8 +76,8 @@ export class ReputationModel {
         return history
     }
 
-    predict(features: tf.Tensor2D): tf.Tensor<tf.Rank> {
-        return this.model.predict(features) as tf.Tensor<tf.Rank>
+    predict(features: tf.ITensor): tf.ITensor { 
+        return this.model.predict(features) as tf.ITensor
     }
 
     async save(path: string): Promise<void> {

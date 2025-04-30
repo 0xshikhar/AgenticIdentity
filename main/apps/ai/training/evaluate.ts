@@ -1,8 +1,8 @@
 import * as tf from '@tensorflow/tfjs-node'
 import path from 'path'
-import { ReputationModel } from '../models/ReputationModel'
-import { DatasetManager } from './DatasetManager'
-import { loadModelConfig } from '../utils/model-utils'
+import { ReputationModel } from '../models/ReputationModel.js'
+import { DatasetManager } from './DatasetManager.js'
+import { loadModelConfig } from '../utils/model-utils.js'
 
 async function evaluateModel() {
     // Configuration
@@ -32,7 +32,7 @@ async function evaluateModel() {
     const yMean = dataset.yTest.mean()
     const totalSS = dataset.yTest.sub(yMean).square().sum()
     const residualSS = predictions.sub(dataset.yTest).square().sum()
-    const rSquared = tf.sub(1, residualSS.div(totalSS))
+    const rSquared = tf.scalar(1).sub(residualSS.div(totalSS))
 
     // Output results
     console.log(`Mean Squared Error: ${mse.dataSync()[0].toFixed(4)}`)

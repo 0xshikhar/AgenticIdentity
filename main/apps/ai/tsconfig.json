@@ -13,6 +13,6 @@
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "training/DatasetManager.js"],
   "exclude": ["node_modules"]
 } 

@@ -1,4 +1,4 @@
-import { ReputationScore } from './ScoreGenerator';
+import { ReputationScore } from './ScoreGenerator.js'; 
 
 export class MockScoreGenerator {
     private isInitialized = false;
@@ -45,7 +45,7 @@ export class MockScoreGenerator {
         
         // Return mock data
         return {
-            address: walletAddress,
+            walletAddress: walletAddress,     
             score: score,
             confidence: confidence,
             factors: factors,

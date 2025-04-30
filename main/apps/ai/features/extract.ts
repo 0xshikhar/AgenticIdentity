@@ -1,5 +1,5 @@
-import { FeatureExtractor } from './FeatureExtractor'
-import { saveFeatures } from '../utils/data-utils'
+import { FeatureExtractor } from './FeatureExtractor.js'
+import { saveFeatures } from '../utils/data-utils.js'
 
 async function extractAndSaveFeatures() {
     // Get wallet addresses from database or command line args

@@ -1,13 +1,13 @@
 import * as tf from '@tensorflow/tfjs-node'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { loadFeatures } from '../utils/data-utils'
+import { loadFeatures } from '../utils/data-utils.js'
 
 export interface Dataset {
-    xTrain: tf.Tensor2D
-    yTrain: tf.Tensor2D
-    xTest: tf.Tensor2D
-    yTest: tf.Tensor2D
+    xTrain: tf.ITensor
+    yTrain: tf.ITensor
+    xTest: tf.ITensor
+    yTest: tf.ITensor
 }
 
 export class DatasetManager {
@@ -21,7 +21,7 @@ export class DatasetManager {
             if (file.endsWith('.json')) {
                 const walletFeatures = await loadFeatures(path.join(featuresDir, file))
                 allFeatures.push(walletFeatures.normalizedFeatures)
-                allAddresses.push(walletFeatures.walletAddress)
+                allAddresses.push(walletFeatures.walletAddress) 
             }
         }
 
@@ -46,8 +46,8 @@ export class DatasetManager {
         }
 
         // Convert to tensors
-        const xData = tf.tensor2d(matchedFeatures)
-        const yData = tf.tensor2d(matchedLabels)
+        const xData = tf.tensor(matchedFeatures)
+        const yData = tf.tensor(matchedLabels)
 
         // Split into train and test sets
         const numSamples = matchedFeatures.length
@@ -66,19 +66,19 @@ export class DatasetManager {
         await fs.mkdir(outputDir, { recursive: true })
 
         // Save tensors
-        await dataset.xTrain.array().then(async data => {
+        await dataset.xTrain.array().then(async (data: number[][]) => {
             await fs.writeFile(path.join(outputDir, 'x_train.json'), JSON.stringify(data))
         })
 
-        await dataset.yTrain.array().then(async data => {
+        await dataset.yTrain.array().then(async (data: number[][]) => {
             await fs.writeFile(path.join(outputDir, 'y_train.json'), JSON.stringify(data))
         })
 
-        await dataset.xTest.array().then(async data => {
+        await dataset.xTest.array().then(async (data: number[][]) => {
             await fs.writeFile(path.join(outputDir, 'x_test.json'), JSON.stringify(data))
         })
 
-        await dataset.yTest.array().then(async data => {
+        await dataset.yTest.array().then(async (data: number[][]) => {
             await fs.writeFile(path.join(outputDir, 'y_test.json'), JSON.stringify(data))
         })
     }

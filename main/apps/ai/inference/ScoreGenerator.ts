@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs-node'
-import { ReputationModel } from '../models/ReputationModel'
-import { FeatureExtractor } from '../features/FeatureExtractor'
-import { loadModelConfig } from '../utils/model-utils'
+import { ReputationModel } from '../models/ReputationModel.js'
+import { FeatureExtractor } from '../features/FeatureExtractor.js'
+import { loadModelConfig } from '../utils/model-utils.js'
 import path from 'path'
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -102,7 +102,7 @@ export class ScoreGenerator {
             
             // Return mock data
             return {
-                address: walletAddress,
+                walletAddress: walletAddress,
                 score: score,
                 confidence: confidence,
                 factors: factors,
@@ -115,7 +115,7 @@ export class ScoreGenerator {
         const normalizedFeatures = await this.featureExtractor.normalizeFeatures(walletFeatures.features)
 
         // Predict score
-        const featureTensor = tf.tensor2d([normalizedFeatures])
+        const featureTensor = tf.tensor([normalizedFeatures]) as tf.ITensor
         const prediction = this.model.predict(featureTensor)
         const rawScore = prediction.dataSync()[0]
 

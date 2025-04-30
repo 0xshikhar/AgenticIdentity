@@ -1,4 +1,4 @@
-import { ScoreGenerator } from './ScoreGenerator'
+import { ScoreGenerator } from './ScoreGenerator.js'
 
 async function generateScores() {
     // Get wallet addresses from command line args
