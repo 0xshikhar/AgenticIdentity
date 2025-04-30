@@ -21,9 +21,16 @@ export interface TransactionStats {
     contractInteractions: number
     uniqueContractAddresses: number
     transactionsLast30Days: number
-    transactionsLast90Days: number
-    averageTransactionsPerDay: number
-    uniqueRecipients: number
+    averageTransactionValue: any
+    largestTransaction: any
+    averageGasUsed: any
+    totalGasUsed: any
+    contractInteractionCount: any
+    uniqueAddressesInteracted: any
+    successRate: any
+    averageTransactionsPerDay: any
+    transactionsLast90Days: any
+    uniqueRecipients: any
     isAllTime: boolean
 }
 

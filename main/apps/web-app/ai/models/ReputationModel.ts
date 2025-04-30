@@ -76,8 +76,8 @@ export class ReputationModel {
         return history
     }
 
-    predict(features: tf.Tensor2D): tf.Tensor {
-        return this.model.predict(features)
+    predict(features: tf.Tensor2D): tf.Tensor<tf.Rank> {
+        return this.model.predict(features) as tf.Tensor<tf.Rank>
     }
 
     async save(path: string): Promise<void> {

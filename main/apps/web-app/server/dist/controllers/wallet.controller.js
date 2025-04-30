@@ -10,46 +10,73 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WalletController = void 0;
-const wallet_service_1 = require("../services/wallet.service");
-const api_error_1 = require("../utils/api-error");
-const blockchain_1 = require("../utils/blockchain");
-// import { config } from '../config/config'; // No longer needed for JWT expiry
+const wallet_service_js_1 = require("../services/wallet.service.js");
+const api_error_js_1 = require("../utils/api-error.js");
+const blockchain_js_1 = require("../utils/blockchain.js");
+// import { config } from '../config/config.js'; // No longer needed for JWT expiry
 class WalletController {
     constructor() {
-        this.getWalletInfo = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+        this.walletService = new wallet_service_js_1.WalletService();
+        // Bind methods
+        this.getInfo = this.getInfo.bind(this);
+        this.getAll = this.getAll.bind(this);
+        this.verifyWallet = this.verifyWallet.bind(this);
+    }
+    /**
+     * @description Get information about a specific wallet
+     * @route GET /api/wallet/:address
+     */
+    getInfo(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { walletAddress } = req.params;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                const { address } = req.params;
+                if (!(0, blockchain_js_1.validateAddress)(address)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
-                const walletInfo = yield this.walletService.getWalletInfo(walletAddress);
-                res.status(200).json({ success: true, data: walletInfo });
+                const info = yield this.walletService.getWalletInfo(address);
+                res.status(200).json(info);
             }
             catch (error) {
                 next(error);
             }
         });
-        /**
-         * Verifies wallet ownership via signature.
-         * In a stateless setup, this might be called before sensitive actions
-         * if not relying on middleware for every request.
-         */
-        this.verifyWallet = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    }
+    /**
+    * @description Get all registered wallets (currently returns empty array)
+    * @route GET /api/wallet/
+    */
+    getAll(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // Note: Service method currently returns []
+                const wallets = yield this.walletService.getAllWallets();
+                res.status(200).json(wallets);
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * Verifies wallet ownership via signature.
+     * In a stateless setup, this might be called before sensitive actions
+     * if not relying on middleware for every request.
+     */
+    verifyWallet(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { address, message, signature } = req.body;
                 if (!address || !message || !signature) {
-                    throw api_error_1.ApiError.badRequest('Address, message, and signature are required');
+                    throw new api_error_js_1.ApiError(400, 'Address, message, and signature are required');
                 }
-                if (!(0, blockchain_1.validateAddress)(address)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                if (!(0, blockchain_js_1.validateAddress)(address)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
                 // Verify that the signature is valid
-                const isValid = (0, blockchain_1.verifySignature)(address, message, signature);
+                const isValid = (0, blockchain_js_1.verifySignature)(address, message, signature);
                 if (!isValid) {
-                    throw api_error_1.ApiError.unauthorized('Invalid signature'); // Use 401 Unauthorized
+                    throw new api_error_js_1.ApiError(401, 'Invalid signature'); // 401 Unauthorized
                 }
-                // Optionally update last login time or perform other actions upon verification
-                // await this.walletService.recordSuccessfulVerification(address);
                 // No JWT is returned
                 res.status(200).json({
                     success: true,
@@ -60,39 +87,6 @@ class WalletController {
                 next(error);
             }
         });
-        /**
-         * Registers a wallet after verifying ownership via signature.
-         */
-        this.registerWallet = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { address, signature, message } = req.body;
-                if (!address || !signature || !message) {
-                    throw api_error_1.ApiError.badRequest('Address, signature, and message are required');
-                }
-                if (!(0, blockchain_1.validateAddress)(address)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                // Verify the signature first
-                const isValid = (0, blockchain_1.verifySignature)(address, message, signature);
-                if (!isValid) {
-                    throw api_error_1.ApiError.unauthorized('Invalid signature'); // Use 401 Unauthorized
-                }
-                // Register the wallet (sets isRegistered = true)
-                const result = yield this.walletService.registerWallet(address);
-                // No JWT is returned
-                res.status(201).json({
-                    success: true,
-                    message: 'Wallet registered successfully',
-                    data: {
-                        wallet: result // Return the updated wallet record
-                    }
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.walletService = new wallet_service_1.WalletService();
     }
 }
 exports.WalletController = WalletController;

@@ -3,23 +3,31 @@
     "version": "1.0.0",
     "description": "AI components for Rootstock reputation scoring system",
     "main": "index.js",
+    "type": "module",
     "scripts": {
-        "train": "ts-node training/train.ts",
-        "evaluate": "ts-node training/evaluate.ts",
-        "extract-features": "ts-node features/extract.ts",
-        "generate-scores": "ts-node inference/generate.ts"
+        "train": "bun training/train.ts",
+        "evaluate": "bun training/evaluate.ts",
+        "extract-features": "bun features/extract.ts",
+        "generate-scores": "bun inference/generate.ts",
+        "serve": "bun server.ts"
     },
     "dependencies": {
         "@tensorflow/tfjs-node": "^4.2.0",
         "@types/node": "^18.15.11",
+        "cors": "^2.8.5",
         "csv-parser": "^3.0.0",
         "dotenv": "^16.0.3",
         "ethers": "^6.3.0",
+        "express": "^5.1.0",
         "fast-csv": "^4.3.6",
-        "ml-regression": "^5.0.0",
+        "ml-regression": "^6.2.0",
         "node-fetch": "^3.3.1",
         "prisma": "^4.13.0",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/express": "4.17.17"
     }
 }

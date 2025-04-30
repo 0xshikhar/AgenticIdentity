@@ -16,7 +16,7 @@ import { MdVerified } from "react-icons/md"
 import { AnonAadhaarProof, LogInWithAnonAadhaar, useAnonAadhaar, useProver } from "@anon-aadhaar/react"
 import { NEBULAID_ADDRESS } from "@/lib/contract"
 import NebulaIDNFT from "../../contract-artifacts/NebulaIDNFT.json"
-import { useAccount, useEnsName } from 'wagmi'; 
+import { useAccount, useEnsName } from 'wagmi';
 import { signMessage } from '@wagmi/core'
 import config from '@/app/providers'
 import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethers"
@@ -74,6 +74,11 @@ export default function HomePage() {
     const [walletScoreLoading, setWalletScoreLoading] = useState(false);
     const [walletScoreError, setWalletScoreError] = useState<string | null>(null);
     const [scoreFactors, setScoreFactors] = useState<any[]>([]);
+
+    // Add these new state variables near your other state declarations
+    const [apiConnectionStatus, setApiConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+    const [showDebugInfo, setShowDebugInfo] = useState(false);
+    const [debugData, setDebugData] = useState<any>(null);
 
     useEffect(() => {
         const ensName = async () => {
@@ -154,12 +159,6 @@ export default function HomePage() {
         }
     }, [setLogs])
 
-    useEffect(() => {
-        if (address && isConnected) {
-            fetchWalletScore(address);
-        }
-    }, [address, isConnected]);
-
     const createReview = useCallback(async () => {
         if (_identity && reviewerHasJoined(_identity)) {
             router.push("/review")
@@ -230,11 +229,11 @@ export default function HomePage() {
                 92 // walletScore
             )
             await tx.wait()
-            console.log("NebulaID minted successfully")
+            console.log("AgenticID minted successfully")
             const userTokenId = await contract.getUserTokenId(address)
             setTokenId(userTokenId.toString())
         } catch (error) {
-            console.error("Error minting NebulaID:", error)
+            console.error("Error minting AgenticID:", error)
         }
     }
 
@@ -259,7 +258,7 @@ export default function HomePage() {
     const handleFaceVerificationComplete = (data: FaceVerificationData) => {
         console.log("Face verification completed:", data);
         setFaceVerificationData(data);
-        
+
         // If verification was successful, you could update other state as needed
         if (data.success) {
             // For example, you might want to track that human verification is complete
@@ -267,22 +266,105 @@ export default function HomePage() {
         }
     };
 
+    // Add this new function to test the API connection
+    const testApiConnection = async () => {
+        try {
+            setApiConnectionStatus('unknown');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            setDebugData({
+                apiUrl,
+                testingTime: new Date().toISOString(),
+                environment: process.env.NODE_ENV,
+                walletConnected: isConnected,
+                walletAddress: address
+            });
+
+            // Try to make a simple request to check if the API is available
+            const response = await axios.get(`${apiUrl}/health`, { timeout: 5000 });
+            console.log("API health check response:", response.data);
+            
+            setApiConnectionStatus('connected');
+            setDebugData(prev => ({ 
+                ...prev, 
+                connectionStatus: 'connected',
+                healthResponse: response.data
+            }));
+            
+            return true;
+        } catch (error) {
+            console.error("API connection test failed:", error);
+            setApiConnectionStatus('disconnected');
+            setDebugData(prev => ({ 
+                ...prev, 
+                connectionStatus: 'disconnected',
+                error: {
+                    message: error.message,
+                    name: error.name,
+                    code: error.code
+                }
+            }));
+            
+            return false;
+        }
+    };
+
+    // Enhance the existing fetchWalletScore function
     const fetchWalletScore = async (walletAddress: string) => {
         setWalletScoreLoading(true);
         setWalletScoreError(null);
         
         try {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/score/enhanced/${walletAddress}`);
+            // First check if API is accessible
+            const isApiConnected = await testApiConnection();
+            if (!isApiConnected) {
+                throw new Error("Cannot connect to the wallet score API. Please check if the server is running.");
+            }
+            
+            console.log(`Fetching wallet score for: ${walletAddress}`);
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            console.log(`Using API URL: ${apiUrl}/api/score/${walletAddress}`);
+            
+            const response = await axios.get(`${apiUrl}/api/score/${walletAddress}`, {
+                timeout: 10000 // Add a reasonable timeout
+            });
+            console.log("API response:", response.data);
             
             if (response.data.success) {
                 setWalletScore(response.data.data.score);
                 setScoreFactors(response.data.data.factors || []);
+                
+                toast.success('Wallet score successfully retrieved', {
+                    description: `Score: ${response.data.data.score}/100`,
+                    duration: 5000,
+                });
             } else {
-                throw new Error("Failed to get wallet score");
+                console.error("API returned success: false", response.data);
+                throw new Error(response.data.error || "Failed to get wallet score");
             }
         } catch (error) {
+            let errorMessage = "Unknown error";
+            
+            if (error.code === 'ERR_NETWORK') {
+                errorMessage = "Network error: Unable to connect to the API server. Please check if the server is running.";
+            } else if (error.response) {
+                // Server responded with an error status code
+                errorMessage = `Server error (${error.response.status}): ${error.response?.data?.error || error.message}`;
+            } else if (error.request) {
+                // Request was made but no response received
+                errorMessage = "No response from server. The request was made but no response was received.";
+            } else {
+                // Something else happened while setting up the request
+                errorMessage = error.message || "Failed to fetch wallet score";
+            }
+            
             console.error("Error fetching wallet score:", error);
-            setWalletScoreError("Failed to fetch wallet score");
+            console.error("Error details:", errorMessage);
+            setWalletScoreError(errorMessage);
+            
+            toast.error('Failed to fetch wallet score', {
+                description: errorMessage,
+                duration: 5000,
+            });
         } finally {
             setWalletScoreLoading(false);
         }
@@ -295,8 +377,8 @@ export default function HomePage() {
                     <div className="flex flex-col items-center py-10">
                         <h1 className="mb-5 text-4xl md:text-5xl font-serif font-bold">Get Your Agentic Verifiable Identity</h1>
                         <p className="mb-8 text-lg md:text-xl">
-                        Verify your onchain & offchain data for identity and credit score using ZK proofs & AI models.
-                    </p>
+                            Verify your onchain & offchain data for identity and credit score using ZK proofs & AI models.
+                        </p>
                     </div>
                     {/* First row of cards */}
                     <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
@@ -328,7 +410,7 @@ export default function HomePage() {
                             <h2 className="text-xl md:text-2xl font-semibold mb-3">Face Verification</h2>
                             <div className="flex-grow">
                                 <p className="mb-4">Complete a quick face scan to verify your liveliness as a human.</p>
-                                
+
                                 {/* Show verification data if available */}
                                 {faceVerificationData && (
                                     <div className="mt-2 mb-4">
@@ -338,19 +420,19 @@ export default function HomePage() {
                                                 {faceVerificationData.success ? "Verified" : "Not Verified"}
                                             </span>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="font-medium">Liveness Score:</span>
                                             <span>{faceVerificationData.livenessScore.toFixed(0)}%</span>
                                         </div>
-                                        
+
                                         {faceVerificationData.ageGender && (
                                             <>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="font-medium">Age Estimate:</span>
                                                     <span>{faceVerificationData.ageGender.age}</span>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-medium">Gender:</span>
                                                     <span>{faceVerificationData.ageGender.gender}</span>
@@ -361,9 +443,9 @@ export default function HomePage() {
                                 )}
                             </div>
                             <div className="flex justify-center mt-auto">
-                                <FaceButton 
-                                    className="px-6" 
-                                    buttonText="Verify Liveness" 
+                                <FaceButton
+                                    className="px-6"
+                                    buttonText="Verify Liveness"
                                     onVerificationComplete={handleFaceVerificationComplete}
                                 />
                             </div>
@@ -435,57 +517,105 @@ export default function HomePage() {
                             <div className="flex-grow flex flex-col items-center justify-center w-full">
                                 {!isConnected ? (
                                     <div className="text-sm">Connect your wallet</div>
-                                ) : walletScoreLoading ? (
-                                    <div className="flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                                    </div>
-                                ) : walletScoreError ? (
-                                    <div className="text-red-500 text-sm">{walletScoreError}</div>
-                                ) : walletScore !== null ? (
+                                ) : (
                                     <>
-                                        <div className="text-4xl font-bold mb-2 flex items-center gap-2">
-                                            {walletScore}
-                                            <MdVerified className="text-green-400" />
+                                        {/* API Status Indicator */}
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div 
+                                                className={`w-3 h-3 rounded-full ${
+                                                    apiConnectionStatus === 'connected' ? 'bg-green-500' : 
+                                                    apiConnectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+                                                }`}
+                                            ></div>
+                                            <span className="text-xs">
+                                                {apiConnectionStatus === 'connected' ? 'API Connected' : 
+                                                 apiConnectionStatus === 'disconnected' ? 'API Disconnected' : 'API Status Unknown'}
+                                            </span>
+                                            <button 
+                                                onClick={testApiConnection}
+                                                className="text-xs text-blue-500 underline"
+                                            >
+                                                Test
+                                            </button>
                                         </div>
-                                        {scoreFactors.length > 0 && (
-                                            <div className="mt-3 w-full">
-                                                <h3 className="text-sm font-medium mb-2">Top factors:</h3>
-                                                <div className="space-y-2">
-                                                    {scoreFactors.slice(0, 3).map((factor, index) => (
-                                                        <div key={index} className="text-xs">
-                                                            <div className="flex justify-between">
-                                                                <span>{factor.name}</span>
-                                                                <span>{factor.contribution.toFixed(1)}%</span>
-                                                            </div>
-                                                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                                <div 
-                                                                    className="bg-green-600 h-1.5 rounded-full" 
-                                                                    style={{ width: `${factor.score}%` }}
-                                                                ></div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                        
+                                        {/* Manual fetch button */}
+                                        <button
+                                            onClick={() => fetchWalletScore(address)}
+                                            className="bg-black text-white py-2 px-6 mb-4 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                            disabled={walletScoreLoading}
+                                        >
+                                            {walletScoreLoading ? 'Loading...' : 'Get Wallet Score'}
+                                        </button>
+                                        
+                                        {/* Debug button */}
+                                        <button
+                                            onClick={() => setShowDebugInfo(!showDebugInfo)}
+                                            className="text-xs text-gray-500 mb-3 underline"
+                                        >
+                                            {showDebugInfo ? 'Hide Debug Info' : 'Show Debug Info'}
+                                        </button>
+                                        
+                                        {/* Debug info */}
+                                        {showDebugInfo && debugData && (
+                                            <div className="mb-4 p-3 bg-gray-100 rounded text-xs w-full overflow-auto max-h-40">
+                                                <pre>{JSON.stringify(debugData, null, 2)}</pre>
                                             </div>
                                         )}
+                                        
+                                        {walletScoreLoading ? (
+                                            <div className="flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                            </div>
+                                        ) : walletScoreError ? (
+                                            <div className="text-red-500 text-sm">Error: {walletScoreError}</div>
+                                        ) : walletScore !== null ? (
+                                            <>
+                                                <div className="text-4xl font-bold mb-2 flex items-center gap-2">
+                                                    {walletScore}
+                                                    <MdVerified className="text-green-400" />
+                                                </div>
+                                                {scoreFactors.length > 0 && (
+                                                    <div className="mt-3 w-full">
+                                                        <h3 className="text-sm font-medium mb-2">Top factors:</h3>
+                                                        <div className="space-y-2">
+                                                            {scoreFactors.slice(0, 3).map((factor, index) => (
+                                                                <div key={index} className="text-xs">
+                                                                    <div className="flex justify-between">
+                                                                        <span>{factor.name}</span>
+                                                                        <span>{factor.contribution.toFixed(1)}%</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                                        <div 
+                                                                            className="bg-green-600 h-1.5 rounded-full" 
+                                                                            style={{ width: `${factor.score}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-sm">Click the button to calculate your score</div>
+                                        )}
                                     </>
-                                ) : (
-                                    <div className="text-sm">Score unavailable</div>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* NebulaID Section */}
+                    {/* AgenticID Section */}
                     <div className="w-full mt-8 flex flex-col items-center">
-                        <p className="mb-4 text-lg">Your Token ID: {tokenId || "You don't have a NebulaID yet"}</p>
+                        <p className="mb-4 text-lg">Your Token ID: {tokenId || "You don't have a AgenticID yet"}</p>
 
                         {!tokenId ? (
                             <button
                                 onClick={mintNebulaID}
                                 className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors"
                             >
-                                Mint Your NebulaID
+                                Mint Your AgenticID
                             </button>
                         ) : (
                             <button
@@ -498,7 +628,7 @@ export default function HomePage() {
 
                         {identity && (
                             <div className="mt-6 p-5 bg-white rounded-xl shadow-md w-full max-w-md">
-                                <h2 className="text-xl font-semibold mb-3">Your NebulaID Identity:</h2>
+                                <h2 className="text-xl font-semibold mb-3">Your AgenticID Identity:</h2>
                                 <div className="space-y-2">
                                     <p>Twitter Verified: {identity.twitterVerified.toString()}</p>
                                     <p>Human Verified: {identity.humanVerified.toString()}</p>

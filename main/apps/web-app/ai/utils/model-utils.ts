@@ -33,7 +33,7 @@ export async function loadModel(modelPath: string): Promise<tf.Sequential> {
         return model as tf.Sequential
     } catch (error) {
         console.error(`Error loading model from ${modelPath}:`, error)
-        throw new Error(`Failed to load model: ${error.message}`)
+        throw new Error(`Failed to load model: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 }
 
@@ -58,6 +58,6 @@ export async function loadModelConfig(configPath: string): Promise<ModelConfigWi
         return JSON.parse(configData)
     } catch (error) {
         console.error(`Error loading model config from ${configPath}:`, error)
-        throw new Error(`Failed to load model config: ${error.message}`)
+        throw new Error(`Failed to load model config: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 } 

@@ -1,388 +1,86 @@
 // server/src/services/transaction.service.ts
-import { prisma } from '../index';
-import { ApiError } from '../utils/api-error';
-import { fetchTransactions } from '../utils/blockchain';
-import { TransactionStats } from '../utils/score-calculator';
-
+// import { prisma } from '../index.js'; // Removed
+import { ApiError } from '../utils/api-error.js';
+import { fetchTransactions } from '../utils/blockchain.js'; // Keep this
+// import { TransactionStats } from '../utils/score-calculator.js'; // Keep if score calculation still needs it
+import axios from 'axios';
+import { config } from '../config/config.js';
 export class TransactionService {
 
-    async getWalletTransactions(
-        walletAddress: string,
-        page: number = 1,
-        limit: number = 20,
-        sort: 'asc' | 'desc' = 'desc'
-    ) {
-        const normalizedAddress = walletAddress.toLowerCase();
-        const skip = (page - 1) * limit;
-
-        const transactions = await prisma.transaction.findMany({
-            where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] },
-            orderBy: { timestamp: sort },
-            skip,
-            take: limit
-        });
-
-        const totalCount = await prisma.transaction.count({
-            where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] }
-        });
-
-        // Optional: Trigger sync if no transactions found on first page request
-        if (transactions.length === 0 && page === 1 && totalCount === 0) {
-            console.log(`No transactions found for ${normalizedAddress}, attempting sync.`);
-            await this.syncWalletTransactions(normalizedAddress);
-            // Re-query after sync
-            const freshTransactions = await prisma.transaction.findMany({
-                where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] },
-                orderBy: { timestamp: sort },
-                skip,
-                take: limit
-            });
-            const freshTotalCount = await prisma.transaction.count({
-                where: { OR: [{ from: normalizedAddress }, { to: normalizedAddress }] }
-            });
+    /**
+     * Gets transactions directly from the blockchain API.
+     * Note: Pagination/sorting might be limited by the API or require in-memory processing.
+     */
+    async getWalletTransactions(walletAddress: string, page: number = 1, pageSize: number = 20) {
+        try {
+            // Use original wallet address directly
+            const transactions = await this.fetchTransactionsFromBlockscout(walletAddress, page, pageSize);
+            
+            // Process transactions as needed
             return {
-                data: freshTransactions,
+                data: transactions,
                 pagination: {
                     page,
-                    limit,
-                    totalCount: freshTotalCount,
-                    totalPages: Math.ceil(freshTotalCount / limit)
+                    pageSize,
+                    totalCount: transactions.length, // Adjust if API provides total count
                 }
             };
+        } catch (error) {
+            console.error(`Error fetching transactions for ${walletAddress}:`, error);
+            throw error;
         }
+    }
 
-
-        return {
-            data: transactions,
-            pagination: {
-                page,
-                limit,
-                totalCount,
-                totalPages: Math.ceil(totalCount / limit)
+    private async fetchTransactionsFromBlockscout(walletAddress: string, page: number, pageSize: number) {
+        try {
+            // Use original wallet address, not normalized
+            const url = `${config.rootstockApi.url}/api?module=account&action=txlist&address=${walletAddress}&page=${page}&offset=${pageSize}&sort=desc`;
+            
+            console.log(`Fetching transactions from Blockscout: ${url}`);
+            
+            const response = await axios.get(url, {
+                headers: config.rootstockApi.apiKey ? { 'api-key': config.rootstockApi.apiKey } : {},
+                timeout: 10000 // Add reasonable timeout
+            });
+            
+            if (response.data.status !== '1') {
+                console.error('Blockscout API Error (txlist):', response.data.message, response.data.result);
+                throw new Error(`Blockscout API Error: ${response.data.message || 'Failed to fetch transactions'}`);
             }
-        };
+            
+            return response.data.result || [];
+        } catch (error: any) {
+            console.error('Error fetching transactions from Blockscout:', error?.message);
+            throw new ApiError(500, `Blockscout API request failed: ${error?.message}`);
+        }
     }
 
-    async getTransactionStats(walletAddress: string, period: string = 'all') {
-        const normalizedAddress = walletAddress.toLowerCase();
-        const isAllTime = period === 'all';
-        const startDate = isAllTime ? undefined : this.getStartDateFromPeriod(period);
+    // Removed syncWalletTransactions method as it relied on Prisma
 
-        const whereClause: any = {
-            OR: [
-                { from: normalizedAddress },
-                { to: normalizedAddress }
-            ]
-        };
-        if (startDate) {
-            whereClause.timestamp = { gte: startDate };
-        }
-
-        // Fetch all relevant transactions for the period at once
-        const transactions = await prisma.transaction.findMany({ where: whereClause });
-
-        const sentTransactionsList = transactions.filter((tx: any) => tx.from === normalizedAddress);
-        const receivedTransactionsList = transactions.filter((tx: any) => tx.to === normalizedAddress);
-
-        const sentTransactions = sentTransactionsList.length;
-        const receivedTransactions = receivedTransactionsList.length;
-        const totalTransactions = transactions.length;
-
-        // Calculate total value (consider using BigInt for precision if values can be large)
-        const totalValueSent = sentTransactionsList.reduce((sum: number, tx: any) => sum + (tx.value || 0), 0);
-        const totalValueReceived = receivedTransactionsList.reduce((sum: number, tx: any) => sum + (tx.value || 0), 0);
-        const netValueChange = totalValueReceived - totalValueSent; // Example derived stat
-        const totalValue = totalValueSent + totalValueReceived; // Or just total volume if needed
-
-        // Unique contacts (sent to or received from)
-        const contacts = new Set([
-            ...sentTransactionsList.map((tx: any) => tx.to).filter(Boolean), // Filter out null 'to' addresses
-            ...receivedTransactionsList.map((tx: any) => tx.from)
-        ]);
-        // Remove self from contacts if present
-        contacts.delete(normalizedAddress);
-        const uniqueContacts = contacts.size;
-
-        // Contract interactions initiated by this wallet
-        const contractInteractions = sentTransactionsList.filter((tx: any) => tx.isContractInteraction).length;
-
-        // Unique contract addresses interacted with (initiated by this wallet)
-        const uniqueContractAddresses = new Set(
-            sentTransactionsList
-                .filter((tx: any) => tx.isContractInteraction && tx.to)
-                .map((tx: any) => tx.to!) // Use non-null assertion as we filtered
-        ).size;
-
-        // Calculate stats for specific recent periods (e.g., 30/90 days) regardless of the main 'period'
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-
-        const transactionsLast30Days = transactions.filter((tx: any) => tx.timestamp >= thirtyDaysAgo).length;
-        const transactionsLast90Days = transactions.filter((tx: any) => tx.timestamp >= ninetyDaysAgo).length;
-
-        // Calculate average value
-        const avgValue = totalTransactions > 0 ? totalValue / totalTransactions : 0;
-
-        // Calculate average transactions per day (if period is not 'all')
-        let averageTransactionsPerDay = 0;
-        if (!isAllTime) {
-            const days = this.getPeriodDays(period);
-            averageTransactionsPerDay = days > 0 ? totalTransactions / days : 0;
-        }
-
-
-        return {
-            period, // The requested period
-            totalTransactions,
-            sentTransactions,
-            receivedTransactions,
-            totalValue, // Total value transacted (sent + received)
-            avgValue, // Average value per transaction
-            netValueChange, // Example derived stat
-            uniqueContacts, // Renamed from uniqueRecipients for clarity
-            contractInteractions, // Interactions initiated by the wallet
-            uniqueContractAddresses, // Unique contracts called by the wallet
-            transactionsLast30Days, // Always calculated
-            transactionsLast90Days, // Always calculated
-            averageTransactionsPerDay: isAllTime ? null : averageTransactionsPerDay, // Only relevant for specific periods
-        };
-    }
-
-
-
-    // async getTransactionStats(
-    //     address: string,
-    //     period: string
-    // ): Promise<TransactionStats> {
-    //     const txs = await this.fetchTransactions(address, period)
-
-    //     const uniqueContacts = new Set<string>()
-    //     const uniqueContractAddresses = new Set<string>()
-    //     const uniqueRecipients = new Set<string>()
-
-    //     for (const tx of txs) {
-    //         if (tx.to) uniqueRecipients.add(tx.to.toLowerCase())
-    //     }
-
-    //     return {
-    //         period,
-    //         totalTransactions: txs.length,
-    //         sentTransactions,
-    //         receivedTransactions,
-    //         totalValue,
-    //         avgValue,
-    //         netValueChange,
-    //         uniqueContacts: uniqueContacts.size,
-    //         contractInteractions,
-    //         uniqueContractAddresses: uniqueContractAddresses.size,
-    //         transactionsLast30Days,
-    //         transactionsLast90Days,
-    //         averageTransactionsPerDay,
-    //         uniqueRecipients: uniqueRecipients.size,
-    //     }
-    // }
+    // Removed getTransactionStats method if it relied solely on Prisma aggregates
 
     /**
-     * Analyzes transactions for patterns and insights.
-     * Currently, it returns the same as getTransactionStats but could be expanded.
+     * Gets details for a specific transaction hash directly from the API.
+     * Note: This might require a different API endpoint or filtering the list.
      */
-    async analyzeTransactions(walletAddress: string, period: string = 'all') {
-        // For now, analysis is the same as stats. Can be expanded later.
-        const stats = await this.getTransactionStats(walletAddress, period);
-
-        // Example: Add a simple activity classification
-        let activityLevel = 'low';
-        if (stats.transactionsLast30Days > 50) activityLevel = 'high';
-        else if (stats.transactionsLast30Days > 10) activityLevel = 'medium';
-
-        return {
-            ...stats,
-            // Add more derived insights here
-            activityLevel, // e.g., 'low', 'medium', 'high'
-            // potential_sybil_risk: calculateSybilRisk(stats), // Example future analysis
-        };
-    }
-
-    async syncWalletTransactions(walletAddress: string) {
-        const normalizedAddress = walletAddress.toLowerCase();
-        const jobId = `sync-${normalizedAddress.substring(0, 8)}-${Date.now()}`; // Generate an ID
-
-        try {
-            const transactions = await fetchTransactions(normalizedAddress);
-            let count = 0;
-
-            if (!transactions || transactions.length === 0) {
-                console.log(`No transactions found via API for ${normalizedAddress}`);
-                return { success: true, message: 'No new transactions found via API', id: jobId };
-            }
-
-            console.log(`Fetched ${transactions.length} transactions via API for ${normalizedAddress}. Processing...`);
-
-
-            const existingHashes = new Set(
-                (await prisma.transaction.findMany({
-                    where: {
-                        OR: [
-                            { from: normalizedAddress },
-                            { to: normalizedAddress }
-                        ]
-                    },
-                    select: { hash: true }
-                })).map((t: any) => t.hash)
-            );
-
-
-            const transactionsToCreate = [];
-
-            for (const tx of transactions) {
-                if (!existingHashes.has(tx.hash)) {
-                    const isContractInteraction = tx.input && tx.input !== '0x';
-                    const toAddress = tx.to ? tx.to.toLowerCase() : null; // Handle null 'to' (contract creation)
-
-                    // Basic validation
-                    if (!tx.hash || !tx.from || !tx.blockNumber || !tx.timeStamp) {
-                        console.warn(`Skipping invalid transaction data for ${normalizedAddress}:`, tx);
-                        continue;
-                    }
-
-
-                    transactionsToCreate.push({
-                        hash: tx.hash,
-                        from: tx.from.toLowerCase(),
-                        to: toAddress,
-                        // Ensure value is parsed correctly, handle potential large numbers if necessary
-                        value: parseFloat(tx.value || '0'), // Use parseFloat, default to 0
-                        gasUsed: parseInt(tx.gasUsed || '0'),
-                        gasPrice: parseFloat(tx.gasPrice || '0'),
-                        timestamp: new Date(parseInt(tx.timeStamp) * 1000),
-                        blockNumber: parseInt(tx.blockNumber),
-                        isContractInteraction,
-                        status: tx.isError === '0' ? 'success' : 'failed',
-                        // Calculate transaction fee safely
-                        transactionFee: (parseInt(tx.gasUsed || '0') * parseFloat(tx.gasPrice || '0')) / 1e18 // Example: Convert from Wei to Ether if needed
-                    });
-                    count++;
-                }
-            }
-
-
-            if (transactionsToCreate.length > 0) {
-                await prisma.transaction.createMany({
-                    data: transactionsToCreate,
-                    skipDuplicates: true, // Although we checked, this adds safety
-                });
-                console.log(`Saved ${count} new transactions for ${normalizedAddress}`);
-                return { success: true, count, id: jobId };
-            } else {
-                console.log(`No new transactions to save for ${normalizedAddress}`);
-                return { success: true, message: 'No new transactions to save', id: jobId };
-            }
-        } catch (error) {
-            console.error(`Error syncing transactions for ${normalizedAddress} (Job ID: ${jobId}):`, error);
-            // Don't re-throw ApiError here, just log and return failure
-            return { success: false, message: `Failed to sync transactions: ${error instanceof Error ? error.message : 'Unknown error'}`, id: jobId };
-        }
-    }
-
     async getTransactionDetails(transactionHash: string) {
-        // Check if transaction exists in database
-        const transaction = await prisma.transaction.findUnique({
-            where: {
-                hash: transactionHash
-            }
-        });
+        // Option 1: Fetch all transactions for related wallets and filter (inefficient)
+        // Option 2: Use a specific API endpoint if available (e.g., getTransactionByHash)
+        // Option 3: For MVP, maybe this isn't needed if details are in the list view
 
-        if (!transaction) {
-            throw new ApiError(404, 'Transaction not found');
-        }
+        // Placeholder: Assuming you might need to fetch from a list and find it
+        // This is NOT efficient and depends on knowing a related wallet address
+        console.warn("getTransactionDetails without DB requires fetching lists or a dedicated API endpoint.");
+        // Example (inefficient): Fetch from a known wallet and filter
+        // const relatedWallet = '...'; // Need a way to know which wallet list to check
+        // const { data } = await this.getWalletTransactions(relatedWallet, 1, 1000); // Fetch a large page
+        // const transaction = data.find(tx => tx.hash === transactionHash);
 
-        return transaction;
-    }
+        // if (!transaction) {
+        //     throw new ApiError(404, 'Transaction not found (requires efficient lookup method)');
+        // }
+        // return transaction;
 
-    async getNetworkActivity(period: string = '30d') {
-        const startDate = this.getStartDateFromPeriod(period);
-
-        // Get daily transaction counts
-        const dailyActivity = await prisma.$queryRaw`
-      SELECT 
-        DATE_TRUNC('day', "timestamp") as day,
-        COUNT(*) as count
-      FROM "Transaction"
-      WHERE "timestamp" >= ${startDate}
-      GROUP BY DATE_TRUNC('day', "timestamp")
-      ORDER BY day ASC
-    `;
-
-        // Get total transactions in period
-        const totalTransactions = await prisma.transaction.count({
-            where: {
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        });
-
-        // Get unique active wallets
-        const activeWallets = await prisma.$queryRaw`
-      SELECT COUNT(DISTINCT address) as count
-      FROM (
-        SELECT "from" as address FROM "Transaction"
-        WHERE "timestamp" >= ${startDate}
-        UNION
-        SELECT "to" as address FROM "Transaction"
-        WHERE "to" IS NOT NULL AND "timestamp" >= ${startDate}
-      ) as addresses
-    `;
-
-        return {
-            period,
-            totalTransactions,
-            activeWallets: Number(activeWallets[0]?.count || 0),
-            dailyActivity
-        };
-    }
-
-    // Helper methods
-    private getStartDateFromPeriod(period: string): Date {
-        const now = new Date();
-        // Handle 'all' case - return a very old date or handle differently
-        if (period === 'all') return new Date(0); // Start of epoch
-
-        const value = parseInt(period.slice(0, -1));
-        const unit = period.slice(-1).toLowerCase();
-
-        if (isNaN(value)) throw new ApiError(400, `Invalid period value: ${period}`);
-
-
-        switch (unit) {
-            case 'd': // days
-                return new Date(now.setDate(now.getDate() - value));
-            case 'w': // weeks
-                return new Date(now.setDate(now.getDate() - (value * 7)));
-            case 'm': // months
-                return new Date(now.setMonth(now.getMonth() - value));
-            case 'y': // years
-                return new Date(now.setFullYear(now.getFullYear() - value));
-            default:
-                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y" or "all"`);
-        }
-    }
-    private getPeriodDays(period: string): number {
-        if (period === 'all') return Infinity; // Or handle as needed
-
-        const value = parseInt(period.slice(0, -1));
-        const unit = period.slice(-1).toLowerCase();
-
-        if (isNaN(value)) throw new ApiError(400, `Invalid period value: ${period}`);
-
-
-        switch (unit) {
-            case 'd': return value;
-            case 'w': return value * 7;
-            case 'm': return value * 30; // Approximation
-            case 'y': return value * 365; // Approximation
-            default:
-                throw new ApiError(400, `Invalid period format: ${period}. Use format like "30d", "4w", "6m", "1y" or "all"`);
-        }
+        throw new ApiError(501, 'getTransactionDetails not implemented without database/dedicated API endpoint');
     }
 }

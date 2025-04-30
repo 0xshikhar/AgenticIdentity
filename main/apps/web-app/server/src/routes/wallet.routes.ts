@@ -1,16 +1,18 @@
 // server/src/routes/wallet.routes.ts
 import { Router } from 'express';
-import { WalletController } from '../controllers/wallet.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { WalletController } from '../controllers/wallet.controller.js';
+// Import middleware if still used
+// import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 const walletController = new WalletController();
 
-// Public routes
-router.get('/:walletAddress', walletController.getWalletInfo);
+// Use only the methods that exist in the updated controller
+router.get('/:address', walletController.getInfo);
+router.get('/', walletController.getAll);
+router.post('/verify', walletController.verifyWallet);
 
-// Protected routes
-router.post('/verify', authMiddleware, walletController.verifyWallet);
-router.post('/register', walletController.registerWallet);
+// Remove or comment out routes for removed controller methods
+// router.post('/register', walletController.registerWallet);
 
 export const walletRoutes = router;

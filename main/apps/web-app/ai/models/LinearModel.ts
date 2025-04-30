@@ -1,10 +1,10 @@
 import { SimpleLinearRegression } from 'ml-regression'
 
 export class LinearReputationModel {
-    private model: SimpleLinearRegression
+    private model?: SimpleLinearRegression
 
     constructor() {
-        this.model = null
+        // Remove null initialization
     }
 
     train(x: number[][], y: number[]): void {
@@ -14,14 +14,22 @@ export class LinearReputationModel {
     }
 
     predict(x: number[][]): number[] {
+        if (!this.model) {
+            throw new Error('Model not trained')
+        }
+        
         return x.map(features => {
-            const prediction = this.model.predict(features[0])
+            const prediction = this.model!.predict(features[0])
             // Ensure prediction is between 0-100
             return Math.min(100, Math.max(0, prediction))
         })
     }
 
     getCoefficients(): { slope: number, intercept: number } {
+        if (!this.model) {
+            throw new Error('Model not trained')
+        }
+        
         return {
             slope: this.model.slope,
             intercept: this.model.intercept

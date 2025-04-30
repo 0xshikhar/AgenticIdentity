@@ -10,76 +10,59 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionController = void 0;
-const transaction_service_1 = require("../services/transaction.service");
-const api_error_1 = require("../utils/api-error");
-const blockchain_1 = require("../utils/blockchain");
+const transaction_service_js_1 = require("../services/transaction.service.js");
+const api_error_js_1 = require("../utils/api-error.js");
+const blockchain_js_1 = require("../utils/blockchain.js");
 class TransactionController {
     constructor() {
-        this.getTransactions = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+        this.transactionService = new transaction_service_js_1.TransactionService();
+        // Bind methods
+        this.getTransactions = this.getTransactions.bind(this);
+        this.getTransaction = this.getTransaction.bind(this);
+        // Remove bindings for deleted methods
+    }
+    /**
+     * @description Get transactions for a wallet address with pagination
+     * @route GET /api/transactions/:walletAddress
+     */
+    getTransactions(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { walletAddress } = req.params;
-                const { page = '1', limit = '20', sort = 'desc' } = req.query;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                const page = parseInt(req.query.page) || 1;
+                const limit = parseInt(req.query.limit) || 20;
+                // Default sort can be handled in the service, or passed as query param if needed
+                // const sort = (req.query.sort as string) === 'asc' ? 'asc' : 'desc';
+                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
-                const transactions = yield this.transactionService.getWalletTransactions(walletAddress, parseInt(page), parseInt(limit), sort);
-                res.status(200).json({ success: true, data: transactions });
+                const result = yield this.transactionService.getWalletTransactions(walletAddress, page, limit /*, sort */);
+                res.status(200).json(result);
             }
             catch (error) {
                 next(error);
             }
         });
-        this.getTransactionStats = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    }
+    /**
+     * @description Get details for a specific transaction hash
+     * @route GET /api/transactions/detail/:hash
+     */
+    getTransaction(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { walletAddress } = req.params;
-                const { period } = req.query;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                const { hash } = req.params;
+                if (!hash || typeof hash !== 'string' || !/^0x[a-fA-F0-9]{64}$/.test(hash)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid transaction hash format');
                 }
-                const stats = yield this.transactionService.getTransactionStats(walletAddress, period || '30d');
-                res.status(200).json({ success: true, data: stats });
+                // Note: The service method currently throws a 501 Not Implemented error
+                const transaction = yield this.transactionService.getTransactionDetails(hash);
+                res.status(200).json(transaction);
             }
             catch (error) {
                 next(error);
             }
         });
-        this.analyzeTransactions = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { walletAddress, period } = req.body;
-                if (!walletAddress) {
-                    throw api_error_1.ApiError.badRequest('Wallet address is required');
-                }
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                const analysis = yield this.transactionService.analyzeTransactions(walletAddress, period || '30d');
-                res.status(200).json({ success: true, data: analysis });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.syncWalletTransactions = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { walletAddress } = req.params;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                const syncJob = yield this.transactionService.syncWalletTransactions(walletAddress);
-                if (!syncJob.success) {
-                    throw new api_error_1.ApiError(500, syncJob.message || 'Transaction sync failed');
-                }
-                res.status(202).json({
-                    success: true,
-                    message: syncJob.message || 'Transaction sync job started',
-                    jobId: syncJob.id || null
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.transactionService = new transaction_service_1.TransactionService();
     }
 }
 exports.TransactionController = TransactionController;

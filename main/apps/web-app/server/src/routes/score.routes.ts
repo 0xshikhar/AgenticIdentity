@@ -1,24 +1,23 @@
 // server/src/routes/score.routes.ts
 import { Router } from 'express';
-import { ScoreController } from '../controllers/score.controller'; 
-import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
+import { ScoreController } from '../controllers/score.controller.js';
+// Import middleware if still used
+// import { authMiddleware } from '../middleware/auth.middleware.js';
+// import { adminMiddleware } from '../middleware/admin.middleware.js';
 
-const router = Router();
+// IMPORTANT: Export the router directly, not another variable
+export const scoreRoutes = Router();
 const scoreController = new ScoreController();
 
-// Public routes
-router.get('/:walletAddress', scoreController.getWalletScore);
+// Specific routes first
+scoreRoutes.get('/enhanced/:walletAddress', scoreController.getEnhancedScore);
 
-// Protected routes
-router.get('/history/:walletAddress', authMiddleware, scoreController.getScoreHistory);
-router.post('/calculate', authMiddleware, scoreController.calculateScore);
+// Generic routes last
+scoreRoutes.get('/:walletAddress', scoreController.calculateScore);
 
-// Admin-only routes
-router.post('/recalculate-all', authMiddleware, adminMiddleware, scoreController.recalculateAllScores);
-router.post('/config', authMiddleware, adminMiddleware, scoreController.updateScoreConfig);
-
-// Add this with the other routes
-router.get('/ai/:walletAddress', authMiddleware, scoreController.getAIScore);
-router.get('/enhanced/:walletAddress', scoreController.getEnhancedScore);
-
-export const scoreRoutes = router;
+// Remove or comment out routes for removed controller methods
+// scoreRoutes.get('/history/:walletAddress', authMiddleware, scoreController.getScoreHistory);
+// scoreRoutes.post('/calculate', authMiddleware, scoreController.calculateScore);
+// scoreRoutes.post('/recalculate-all', authMiddleware, adminMiddleware, scoreController.recalculateAllScores);
+// scoreRoutes.post('/config', authMiddleware, adminMiddleware, scoreController.updateScoreConfig);
+// scoreRoutes.get('/ai/:walletAddress', authMiddleware, scoreController.getAIScore);

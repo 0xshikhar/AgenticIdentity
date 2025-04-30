@@ -16,7 +16,7 @@ export const config = {
     },
 
     rootstockApi: {
-        url: getEnv('ROOTSTOCK_API_URL', 'https://rootstock.blockscout.com'),
+        url: getEnv('ROOTSTOCK_API_URL', 'https://rootstock-testnet.blockscout.com'),
         apiKey: getEnv('ROOTSTOCK_API_KEY', '')
     },
 

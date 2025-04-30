@@ -19,7 +19,7 @@ import { sepolia, rootstock, rootstockTestnet, mainnet} from "viem/chains"
 const projectId = "9811958bd307518b364ff7178034c435"
 
 export const config = getDefaultConfig({
-    appName: "NebulaID",
+    appName: "AgenticID",
     projectId: projectId,
     chains: [rootstockTestnet, rootstock, sepolia, mainnet],
     ssr: true // If your dApp uses server side rendering (SSR)

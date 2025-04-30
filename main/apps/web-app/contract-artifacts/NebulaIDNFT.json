@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "NebulaIDNFT",
-  "sourceName": "contracts/NebulaID.sol",
+  "sourceName": "contracts/AgenticID.sol",
   "abi": [
     {
       "inputs": [],

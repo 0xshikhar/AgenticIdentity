@@ -10,113 +10,62 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScoreController = void 0;
-const score_service_1 = require("../services/score.service");
-const api_error_1 = require("../utils/api-error");
-// import { AuthRequest } from '../middleware/auth.middleware';
-const blockchain_1 = require("../utils/blockchain");
+const score_service_js_1 = require("../services/score.service.js");
+const api_error_js_1 = require("../utils/api-error.js");
+// import { AuthRequest } from '../middleware/auth.middleware.js';
+const blockchain_js_1 = require("../utils/blockchain.js");
 class ScoreController {
     constructor() {
-        this.getWalletScore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+        this.scoreService = new score_service_js_1.ScoreService();
+        // Bind methods to ensure 'this' context is correct
+        this.calculateScore = this.calculateScore.bind(this);
+        this.getEnhancedScore = this.getEnhancedScore.bind(this);
+    }
+    /**
+     * @description Calculate reputation score for a wallet
+     * @route GET /api/score/:walletAddress
+     */
+    calculateScore(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { walletAddress } = req.params;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                // const { forceRefresh } = req.query; // Removed forceRefresh query param logic
+                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
-                const score = yield this.scoreService.getReputationScore(walletAddress);
-                res.status(200).json({ success: true, data: score });
+                // Call the existing service method - removed forceRefresh argument
+                const scoreData = yield this.scoreService.calculateReputationScore(walletAddress);
+                res.status(200).json(scoreData);
             }
             catch (error) {
-                next(error);
+                next(error); // Pass error to the error handling middleware
             }
         });
-        this.getScoreHistory = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    }
+    // Removed getScore handler (was calling getReputationScore)
+    // Removed getHistory handler (was calling getScoreHistory)
+    // Removed recalculateAll handler (was calling recalculateAllScores)
+    // Removed updateConfig handler (was calling updateScoreConfig)
+    // Removed getAIScore handler (was calling getAIGeneratedScore)
+    // Removed getEnhancedScore handler (was calling getEnhancedReputationScore)
+    /**
+     * @description Get enhanced reputation score for a wallet (using AI)
+     * @route GET /api/score/enhanced/:walletAddress
+     */
+    getEnhancedScore(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { walletAddress } = req.params;
-                const { period } = req.query;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
+                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
+                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
-                const history = yield this.scoreService.getScoreHistory(walletAddress, period || '30d');
-                res.status(200).json({ success: true, data: history });
+                const scoreData = yield this.scoreService.getEnhancedReputationScore(walletAddress);
+                res.status(200).json({ success: true, data: scoreData });
             }
             catch (error) {
                 next(error);
             }
         });
-        this.calculateScore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { walletAddress, forceRefresh } = req.body;
-                if (!walletAddress) {
-                    throw api_error_1.ApiError.badRequest('Wallet address is required');
-                }
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                const score = yield this.scoreService.calculateReputationScore(walletAddress, forceRefresh || false);
-                res.status(200).json({ success: true, data: score });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.recalculateAllScores = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                // This could be a long-running task
-                // Consider implementing a queue for this in production
-                const jobId = yield this.scoreService.recalculateAllScores();
-                res.status(202).json({
-                    success: true,
-                    message: 'Score recalculation job started',
-                    jobId
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.updateScoreConfig = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { weights } = req.body;
-                if (!weights) {
-                    throw api_error_1.ApiError.badRequest('Score weights configuration is required');
-                }
-                const updatedConfig = yield this.scoreService.updateScoreConfig(weights);
-                res.status(200).json({
-                    success: true,
-                    data: updatedConfig
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.getAIScore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { walletAddress } = req.params;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                const score = yield this.scoreService.getAIGeneratedScore(walletAddress);
-                res.status(200).json({ success: true, data: score });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.getEnhancedScore = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { walletAddress } = req.params;
-                if (!(0, blockchain_1.validateAddress)(walletAddress)) {
-                    throw api_error_1.ApiError.badRequest('Invalid wallet address format');
-                }
-                const score = yield this.scoreService.getEnhancedReputationScore(walletAddress);
-                res.status(200).json({ success: true, data: score });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-        this.scoreService = new score_service_1.ScoreService();
     }
 }
 exports.ScoreController = ScoreController;

@@ -1,8 +1,8 @@
 // server/src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/config';
-import { ApiError } from '../utils/api-error';
+import { config } from '../config/config.js';
+import { ApiError } from '../utils/api-error.js';
 
 export interface AuthRequest extends Request {
     user?: {

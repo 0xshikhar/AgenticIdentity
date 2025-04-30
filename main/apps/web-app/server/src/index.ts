@@ -4,15 +4,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createServer } from 'http';
 import { config } from './config/config';
-import { errorMiddleware } from './middleware/error.middleware';
-import { loggerMiddleware } from './middleware/logger.middleware';
-import { scoreRoutes } from './routes/score.routes';
-import { transactionRoutes } from './routes/transaction.routes';
-import { walletRoutes } from './routes/wallet.routes';
-import { PrismaClient } from '@prisma/client';
+import { errorMiddleware } from './middleware/error.middleware.js';
+import { loggerMiddleware } from './middleware/logger.middleware.js';
+import { scoreRoutes } from './routes/score.routes.js';
+import { transactionRoutes } from './routes/transaction.routes.js';
+import { walletRoutes } from './routes/wallet.routes.js';
+// import { PrismaClient } from '@prisma/client'; // Removed
 
-// Initialize prisma client
-export const prisma = new PrismaClient();
+// Initialize prisma client - Removed
+// export const prisma = new PrismaClient(); // Removed
 
 async function startServer() {
     const app = express();
@@ -36,10 +36,10 @@ async function startServer() {
     // Error handling
     app.use(errorMiddleware);
 
-    // Connect to database and start server
+    // Connect to database and start server - Removed DB connection
     try {
-        await prisma.$connect();
-        console.log('Connected to database successfully');
+        // await prisma.$connect(); // Removed
+        // console.log('Connected to database successfully'); // Removed
 
         const server = createServer(app);
 
@@ -50,7 +50,7 @@ async function startServer() {
         // Handle shutdown gracefully
         const shutdown = async () => {
             console.log('Shutting down server...');
-            await prisma.$disconnect();
+            // await prisma.$disconnect(); // Removed
             process.exit(0);
         };
 
@@ -59,7 +59,7 @@ async function startServer() {
 
     } catch (error) {
         console.error('Failed to start server:', error);
-        await prisma.$disconnect();
+        // await prisma.$disconnect(); // Removed
         process.exit(1);
     }
 }

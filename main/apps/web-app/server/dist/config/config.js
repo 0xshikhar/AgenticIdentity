@@ -17,7 +17,7 @@ exports.config = {
         url: getEnv('RSK_NODE_URL', 'https://public-node.rsk.co')
     },
     rootstockApi: {
-        url: getEnv('ROOTSTOCK_API_URL', 'https://rootstock.blockscout.com'),
+        url: getEnv('ROOTSTOCK_API_URL', 'https://rootstock-testnet.blockscout.com'),
         apiKey: getEnv('ROOTSTOCK_API_KEY', '')
     },
     jwt: {

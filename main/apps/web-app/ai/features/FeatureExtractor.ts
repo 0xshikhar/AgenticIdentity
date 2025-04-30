@@ -1,4 +1,5 @@
-import { prisma } from '../../server/src/index'
+// import { prisma } from '../../server/src/index.js'
+import fetch from 'node-fetch'
 
 export interface WalletFeatures {
     walletAddress: string
@@ -11,7 +12,8 @@ export class FeatureExtractor {
         const normalizedAddress = walletAddress.toLowerCase()
         const startDate = this.getStartDateFromPeriod(period)
 
-        // Extract basic transaction metrics
+        // Extract basic transaction metrics using blockchain API instead of DB
+        // All these methods will be replaced with mock data for now
         const txCount = await this.getTransactionCount(normalizedAddress, startDate)
         const sentTxCount = await this.getSentTransactionCount(normalizedAddress, startDate)
         const receivedTxCount = await this.getReceivedTransactionCount(normalizedAddress, startDate)
@@ -89,87 +91,41 @@ export class FeatureExtractor {
         }
     }
 
-    // Helper methods for feature extraction
+    // Replace DB methods with API or mock data implementations
     private async getTransactionCount(address: string, startDate: Date): Promise<number> {
-        return await prisma.transaction.count({
-            where: {
-                OR: [
-                    { from: address },
-                    { to: address }
-                ],
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        })
+        // Instead of querying the DB, we generate a random number for demo purposes
+        // In a real implementation, this would use a blockchain API
+        return Math.floor(Math.random() * 100) + 10
     }
 
     private async getSentTransactionCount(address: string, startDate: Date): Promise<number> {
-        return await prisma.transaction.count({
-            where: {
-                from: address,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        })
+        // Mock implementation
+        const txCount = await this.getTransactionCount(address, startDate)
+        return Math.floor(txCount * 0.6) // Assume ~60% are sent transactions
     }
 
     private async getReceivedTransactionCount(address: string, startDate: Date): Promise<number> {
-        return await prisma.transaction.count({
-            where: {
-                to: address,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        })
+        // Mock implementation
+        const txCount = await this.getTransactionCount(address, startDate)
+        return Math.floor(txCount * 0.4) // Assume ~40% are received transactions
     }
 
     private async getUniqueContactsCount(address: string, startDate: Date): Promise<number> {
-        const result = await prisma.$queryRaw`
-      SELECT COUNT(DISTINCT address) as count 
-      FROM (
-        SELECT "to" as address FROM "Transaction" 
-        WHERE "from" = ${address} AND "timestamp" >= ${startDate}
-        UNION
-        SELECT "from" as address FROM "Transaction" 
-        WHERE "to" = ${address} AND "timestamp" >= ${startDate}
-      ) as contacts
-    `
-
-        return Number(result[0]?.count || 0)
+        // Mock implementation
+        const txCount = await this.getTransactionCount(address, startDate)
+        return Math.floor(txCount * 0.3) + 5 // Assume ~30% of tx count represents unique contacts
     }
 
     private async getTransactionVolume(address: string, startDate: Date): Promise<number> {
-        const result = await prisma.transaction.aggregate({
-            _sum: {
-                value: true
-            },
-            where: {
-                OR: [
-                    { from: address },
-                    { to: address }
-                ],
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        })
-
-        return result._sum.value || 0
+        // Mock implementation
+        const txCount = await this.getTransactionCount(address, startDate)
+        return txCount * (Math.random() * 1000 + 100) // Generate random volume based on tx count
     }
 
     private async getContractInteractionCount(address: string, startDate: Date): Promise<number> {
-        return await prisma.transaction.count({
-            where: {
-                from: address,
-                isContractInteraction: true,
-                timestamp: {
-                    gte: startDate
-                }
-            }
-        })
+        // Mock implementation
+        const txCount = await this.getTransactionCount(address, startDate)
+        return Math.floor(txCount * 0.2) // Assume ~20% are contract interactions
     }
 
     private getStartDateFromPeriod(period: string): Date {

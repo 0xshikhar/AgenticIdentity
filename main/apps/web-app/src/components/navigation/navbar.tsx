@@ -34,7 +34,7 @@ export default function Navbar() {
             <Link href="/">
                 <div className={style.logoContainer}>
                     <Image src={Logo} height={50} width={50} alt="nebula logo" />
-                    <div className="text-[32px] text-black font-serif pl-5">NebulaID</div>
+                    <div className="text-[32px] text-black font-serif pl-5">AgenticID</div>
                     <div className={style.logoText}></div>
                 </div>
             </Link>

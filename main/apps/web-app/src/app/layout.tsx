@@ -11,16 +11,16 @@ import { Toaster } from 'sonner'
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-    title: "NebulaID",
+    title: "AgenticID",
     description: " A InterPlantery Decentralized Identity Protocol  ",
     icons: { icon: "/nebula.png", apple: "/nebula.png" },
     metadataBase: new URL("https://demo.semaphore.pse.dev")
     // openGraph: {
     //     type: "website",
     //     url: "https://demo.semaphore.pse.dev",
-    //     title: "NebulaID",
+    //     title: "AgenticID",
     //     description: "A InterPlantery Decentralized Identity Protocol",
-    //     siteName: "NebulaID",
+    //     siteName: "AgenticID",
     //     images: [
     //         {
     //             url: "https://demo.semaphore.pse.dev/social-media.png"

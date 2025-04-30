@@ -30,7 +30,7 @@ export async function loadFeatures(filePath: string): Promise<EnhancedWalletFeat
         return JSON.parse(data)
     } catch (error) {
         console.error(`Error loading features from ${filePath}:`, error)
-        throw new Error(`Failed to load features: ${error.message}`)
+        throw new Error(`Failed to load features: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 }
 
@@ -84,6 +84,6 @@ export async function loadFromCSV(
         })
     } catch (error) {
         console.error(`Error loading data from ${filePath}:`, error)
-        throw new Error(`Failed to load data: ${error.message}`)
+        throw new Error(`Failed to load data: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
 } 
