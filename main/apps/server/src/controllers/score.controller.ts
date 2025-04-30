@@ -4,6 +4,8 @@ import { ApiError } from '../utils/api-error.js';
 // import { AuthRequest } from '../middleware/auth.middleware.js';
 import { validateAddress } from '../utils/blockchain.js';
 
+const SKIP_VALIDATION = process.env.SKIP_ADDRESS_VALIDATION === 'true';
+
 export class ScoreController {
     private scoreService: ScoreService;
 
@@ -18,18 +20,27 @@ export class ScoreController {
      * @description Calculate reputation score for a wallet
      * @route GET /api/score/:walletAddress
      */
-    async calculateScore(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async calculateScore(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { walletAddress } = req.params;
-            // const { forceRefresh } = req.query; // Removed forceRefresh query param logic
-
-            if (!validateAddress(walletAddress)) {
+            
+            // Special handling for health checks
+            if (walletAddress === 'health') {
+                return res.status(200).json({ 
+                    success: true,
+                    status: 'ok',
+                    message: 'Score API is healthy',
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            // Validate the wallet address format
+            if (!SKIP_VALIDATION && !validateAddress(walletAddress)) {
                 throw new ApiError(400, 'Invalid wallet address format');
             }
 
-            // Call the existing service method - removed forceRefresh argument
+            // Call the existing service method
             const scoreData = await this.scoreService.calculateReputationScore(walletAddress);
-
             res.status(200).json(scoreData);
         } catch (error) {
             next(error); // Pass error to the error handling middleware
@@ -47,11 +58,26 @@ export class ScoreController {
      * @description Get enhanced reputation score for a wallet (using AI)
      * @route GET /api/score/enhanced/:walletAddress
      */
-    async getEnhancedScore(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getEnhancedScore(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
         try {
             const { walletAddress } = req.params;
-
-            if (!validateAddress(walletAddress)) {
+            
+            console.log('walletAddress in getEnhancedScore: ', walletAddress);
+            
+            // Special handling for health checks
+            if (walletAddress === 'health') { 
+                return res.status(200).json({ 
+                    success: true,
+                    data: {
+                        status: 'ok',
+                        message: 'Enhanced Score API is healthy',
+                        timestamp: new Date().toISOString()
+                    }
+                });
+            }
+            
+            // Validate the wallet address format
+            if (!SKIP_VALIDATION && !validateAddress(walletAddress)) {
                 throw new ApiError(400, 'Invalid wallet address format');
             }
 

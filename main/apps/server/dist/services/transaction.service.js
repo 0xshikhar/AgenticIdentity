@@ -48,13 +48,19 @@ class TransactionService {
     fetchTransactionsFromBlockscout(walletAddress, page, pageSize) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // Use original wallet address, not normalized
-                const url = `${config_js_1.config.rootstockApi.url}/api?module=account&action=txlist&address=${walletAddress}&page=${page}&offset=${pageSize}&sort=desc`;
-                console.log(`Fetching transactions from Blockscout: ${url}`);
-                const response = yield axios_1.default.get(url, {
-                    headers: config_js_1.config.rootstockApi.apiKey ? { 'api-key': config_js_1.config.rootstockApi.apiKey } : {},
-                    timeout: 10000 // Add reasonable timeout
+                // Fix the URL format - ensure no double slashes and add other params similar to your curl example
+                const baseUrl = config_js_1.config.rootstockApi.url.replace(/\/+$/, ''); // Remove trailing slashes
+                const url = `${baseUrl}/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999`;
+                // Add API key if available 
+                const apiKey = config_js_1.config.rootstockApi.apiKey;
+                const apiKeyParam = apiKey ? `&apikey=${apiKey}` : '';
+                const fullUrl = `${url}${apiKeyParam}`;
+                console.log(`Fetching transactions from Blockscout: ${fullUrl}`);
+                console.log('walletAddress', walletAddress);
+                const response = yield axios_1.default.get(fullUrl, {
+                    timeout: 15000 // Increased timeout for blockchain API
                 });
+                console.log('Blockscout response status:', response.data.status);
                 if (response.data.status !== '1') {
                     console.error('Blockscout API Error (txlist):', response.data.message, response.data.result);
                     throw new Error(`Blockscout API Error: ${response.data.message || 'Failed to fetch transactions'}`);

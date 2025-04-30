@@ -6,7 +6,7 @@ import { createServer } from 'http';
 import { config } from './config/config';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { loggerMiddleware } from './middleware/logger.middleware.js';
-import { scoreRoutes } from './routes/score.routes.js';
+import scoreRoutes from './routes/score.routes.js';
 import { transactionRoutes } from './routes/transaction.routes.js';
 import { walletRoutes } from './routes/wallet.routes.js';
 // import { PrismaClient } from '@prisma/client'; // Removed

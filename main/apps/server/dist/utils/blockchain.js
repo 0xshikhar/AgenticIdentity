@@ -98,7 +98,7 @@ function fetchTransactions(walletAddress_1) {
             return response.data.result || [];
         }
         catch (error) {
-            console.error('Error fetching transactions from Blockscout:', ((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message);
+            console.error('Error fetching transactions from Blockscout:', ((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message, "walletAddress", walletAddress);
             const status = ((_b = error.response) === null || _b === void 0 ? void 0 : _b.status) || 500;
             const message = ((_d = (_c = error.response) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.message) || error.message || 'Failed to connect to Blockscout API';
             throw new api_error_js_1.ApiError(status, `Blockscout API request failed: ${message}`);

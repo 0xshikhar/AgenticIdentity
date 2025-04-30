@@ -14,6 +14,7 @@ const score_service_js_1 = require("../services/score.service.js");
 const api_error_js_1 = require("../utils/api-error.js");
 // import { AuthRequest } from '../middleware/auth.middleware.js';
 const blockchain_js_1 = require("../utils/blockchain.js");
+const SKIP_VALIDATION = process.env.SKIP_ADDRESS_VALIDATION === 'true';
 class ScoreController {
     constructor() {
         this.scoreService = new score_service_js_1.ScoreService();
@@ -29,11 +30,20 @@ class ScoreController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { walletAddress } = req.params;
-                // const { forceRefresh } = req.query; // Removed forceRefresh query param logic
-                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
+                // Special handling for health checks
+                if (walletAddress === 'health') {
+                    return res.status(200).json({
+                        success: true,
+                        status: 'ok',
+                        message: 'Score API is healthy',
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                // Validate the wallet address format
+                if (!SKIP_VALIDATION && !(0, blockchain_js_1.validateAddress)(walletAddress)) {
                     throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
-                // Call the existing service method - removed forceRefresh argument
+                // Call the existing service method
                 const scoreData = yield this.scoreService.calculateReputationScore(walletAddress);
                 res.status(200).json(scoreData);
             }
@@ -56,7 +66,20 @@ class ScoreController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { walletAddress } = req.params;
-                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
+                console.log('walletAddress in getEnhancedScore: ', walletAddress);
+                // Special handling for health checks
+                if (walletAddress === 'health') {
+                    return res.status(200).json({
+                        success: true,
+                        data: {
+                            status: 'ok',
+                            message: 'Enhanced Score API is healthy',
+                            timestamp: new Date().toISOString()
+                        }
+                    });
+                }
+                // Validate the wallet address format
+                if (!SKIP_VALIDATION && !(0, blockchain_js_1.validateAddress)(walletAddress)) {
                     throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
                 const scoreData = yield this.scoreService.getEnhancedReputationScore(walletAddress);

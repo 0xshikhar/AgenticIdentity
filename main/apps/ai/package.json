@@ -9,7 +9,8 @@
         "evaluate": "bun training/evaluate.ts",
         "extract-features": "bun features/extract.ts",
         "generate-scores": "bun inference/generate.ts",
-        "serve": "bun server.ts"
+        "serve": "bun server.ts",
+        "debug-score": "bun debug/test-score.ts"
     },
     "dependencies": {
         "@tensorflow/tfjs-node": "^4.2.0",

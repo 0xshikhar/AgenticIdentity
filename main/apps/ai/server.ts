@@ -19,23 +19,44 @@ app.use(express.json());
 const scoreGenerator = new ScoreGenerator();
 
 // Health check endpoint    
-app.get('/health', (req: any, res: any) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        service: 'wallet-score-ai',
+        timestamp: new Date().toISOString() 
+    });
 });
 
 // Score generation endpoint
-app.get('/score/:walletAddress', async (req: any, res: any ) => {  
+app.get('/score/:walletAddress', async (req, res) => {  
     try {
         const { walletAddress } = req.params;
         
-        if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+        // Special handling for health checks
+        if (walletAddress === 'health') {
+            return res.status(200).json({ 
+                success: true, 
+                data: {
+                    status: 'ok',
+                    message: 'Score service is healthy',
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
+        
+        // Validate the wallet address - less strict to accept checksummed addresses
+        if (!/^0x[a-fA-F0-9]{40}$/i.test(walletAddress)) {
+            console.error(`Invalid wallet address format: ${walletAddress}`);
             return res.status(400).json({ 
                 success: false, 
                 error: 'Invalid wallet address format' 
             });
         }
 
+        console.log(`Generating score for wallet: ${walletAddress}`);
         const score = await scoreGenerator.generateScore(walletAddress);
+        
+        console.log(`Score generated successfully: ${score.score}/100`);
         res.status(200).json({ success: true, data: score });
     } catch (error) {
         console.error('Error generating score:', error);

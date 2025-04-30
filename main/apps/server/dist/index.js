@@ -20,7 +20,7 @@ const http_1 = require("http");
 const config_1 = require("./config/config");
 const error_middleware_js_1 = require("./middleware/error.middleware.js");
 const logger_middleware_js_1 = require("./middleware/logger.middleware.js");
-const score_routes_js_1 = require("./routes/score.routes.js");
+const score_routes_js_1 = __importDefault(require("./routes/score.routes.js"));
 const transaction_routes_js_1 = require("./routes/transaction.routes.js");
 const wallet_routes_js_1 = require("./routes/wallet.routes.js");
 // import { PrismaClient } from '@prisma/client'; // Removed
@@ -39,7 +39,7 @@ function startServer() {
             res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
         });
         // API Routes
-        app.use('/api/score', score_routes_js_1.scoreRoutes);
+        app.use('/api/score', score_routes_js_1.default);
         app.use('/api/transactions', transaction_routes_js_1.transactionRoutes);
         app.use('/api/wallet', wallet_routes_js_1.walletRoutes);
         // Error handling

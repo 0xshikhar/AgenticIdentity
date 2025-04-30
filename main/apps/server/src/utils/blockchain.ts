@@ -114,7 +114,7 @@ export async function fetchTransactions(
         return response.data.result || [];
 
     } catch (error: any) {
-        console.error('Error fetching transactions from Blockscout:', error.response?.data || error.message);
+        console.error('Error fetching transactions from Blockscout:', error.response?.data || error.message, "walletAddress", walletAddress);
         const status = error.response?.status || 500;
         const message = error.response?.data?.message || error.message || 'Failed to connect to Blockscout API';
         throw new ApiError(status, `Blockscout API request failed: ${message}`);

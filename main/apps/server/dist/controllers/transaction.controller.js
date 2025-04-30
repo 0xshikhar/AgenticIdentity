@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionController = void 0;
 const transaction_service_js_1 = require("../services/transaction.service.js");
 const api_error_js_1 = require("../utils/api-error.js");
-const blockchain_js_1 = require("../utils/blockchain.js");
 class TransactionController {
     constructor() {
         this.transactionService = new transaction_service_js_1.TransactionService();
@@ -33,9 +32,6 @@ class TransactionController {
                 const limit = parseInt(req.query.limit) || 20;
                 // Default sort can be handled in the service, or passed as query param if needed
                 // const sort = (req.query.sort as string) === 'asc' ? 'asc' : 'desc';
-                if (!(0, blockchain_js_1.validateAddress)(walletAddress)) {
-                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
-                }
                 const result = yield this.transactionService.getWalletTransactions(walletAddress, page, limit /*, sort */);
                 res.status(200).json(result);
             }

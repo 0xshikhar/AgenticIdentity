@@ -33,16 +33,23 @@ export class TransactionService {
 
     private async fetchTransactionsFromBlockscout(walletAddress: string, page: number, pageSize: number) {
         try {
-            // Use original wallet address, not normalized
-            const url = `${config.rootstockApi.url}/api?module=account&action=txlist&address=${walletAddress}&page=${page}&offset=${pageSize}&sort=desc`;
+            // Fix the URL format - ensure no double slashes and add other params similar to your curl example
+            const baseUrl = config.rootstockApi.url.replace(/\/+$/, ''); // Remove trailing slashes
+            const url = `${baseUrl}/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999`;
             
-            console.log(`Fetching transactions from Blockscout: ${url}`);
+            // Add API key if available 
+            const apiKey = config.rootstockApi.apiKey;
+            const apiKeyParam = apiKey ? `&apikey=${apiKey}` : '';
             
-            const response = await axios.get(url, {
-                headers: config.rootstockApi.apiKey ? { 'api-key': config.rootstockApi.apiKey } : {},
-                timeout: 10000 // Add reasonable timeout
+            const fullUrl = `${url}${apiKeyParam}`;
+            console.log(`Fetching transactions from Blockscout: ${fullUrl}`);
+            console.log('walletAddress', walletAddress);
+            
+            const response = await axios.get(fullUrl, {
+                timeout: 15000 // Increased timeout for blockchain API
             });
             
+            console.log('Blockscout response status:', response.data.status);
             if (response.data.status !== '1') {
                 console.error('Blockscout API Error (txlist):', response.data.message, response.data.result);
                 throw new Error(`Blockscout API Error: ${response.data.message || 'Failed to fetch transactions'}`);

@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
-    
+
 import withPWA from "next-pwa"
 import { config } from "dotenv"
-import { ProvidePlugin } from 'webpack';
+// We don't need to import buffer here for fallbacks
 
 // Only use fs in Node.js environment (not during client-side)
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -45,29 +45,29 @@ const nextConfig = withPWA({
                 zlib: false,
                 path: false,
                 os: false,
-                buffer: false,
+                // Use a direct path instead of require.resolve
+                buffer: 'buffer/', // Just reference the package name
                 encoding: false
             }
         }
-        
-        // Provide the buffer polyfill globally
-        config.plugins.push(
-            new ProvidePlugin({
-                Buffer: ['buffer', 'Buffer'],
-            })
-        );
 
-        // Add rule to handle .wasm files if needed by anon-aadhaar's dependencies (like snarkjs)
+        // Add rule to handle .wasm files if needed by anon-aadhaar's dependencies
         config.module.rules.push({
-             test: /\.wasm$/,
-             type: "asset/resource" // or "javascript/auto" depending on usage
+            test: /\.wasm$/,
+            type: "asset/resource"
         });
 
-        // Required for snarkjs and other crypto libraries potentially used by anon-aadhaar
-        config.experiments = { ...config.experiments, asyncWebAssembly: true, layers: true };
+        // Required for snarkjs and other crypto libraries
+        config.experiments = {
+            ...config.experiments,
+            asyncWebAssembly: true,
+            layers: true
+        };
 
         return config
-    }
+    },
+    // Add this transpilation configuration
+    transpilePackages: ['@anon-aadhaar/core', '@anon-aadhaar/react'],
 })
 
 export default nextConfig

@@ -6,14 +6,24 @@ import { ScoreController } from '../controllers/score.controller.js';
 // import { adminMiddleware } from '../middleware/admin.middleware.js';
 
 // IMPORTANT: Export the router directly, not another variable
-export const scoreRoutes = Router();
+const router = Router();
 const scoreController = new ScoreController();
 
 // Specific routes first
-scoreRoutes.get('/enhanced/:walletAddress', scoreController.getEnhancedScore);
+router.get('/enhanced/:walletAddress', scoreController.getEnhancedScore);
 
 // Generic routes last
-scoreRoutes.get('/:walletAddress', scoreController.calculateScore);
+router.get('/:walletAddress', scoreController.calculateScore);
+
+// Add a dedicated health check endpoint
+router.get('/health', (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: 'ok',
+        message: 'Score API is healthy',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Remove or comment out routes for removed controller methods
 // scoreRoutes.get('/history/:walletAddress', authMiddleware, scoreController.getScoreHistory);
@@ -21,3 +31,5 @@ scoreRoutes.get('/:walletAddress', scoreController.calculateScore);
 // scoreRoutes.post('/recalculate-all', authMiddleware, adminMiddleware, scoreController.recalculateAllScores);
 // scoreRoutes.post('/config', authMiddleware, adminMiddleware, scoreController.updateScoreConfig);
 // scoreRoutes.get('/ai/:walletAddress', authMiddleware, scoreController.getAIScore);
+
+export default router;

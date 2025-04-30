@@ -23,9 +23,6 @@ export class WalletController {
     async getInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { address } = req.params;
-            if (!validateAddress(address)) {
-                throw new ApiError(400, 'Invalid wallet address format');
-            }
             const info = await this.walletService.getWalletInfo(address);
             res.status(200).json(info);
         } catch (error) {
@@ -59,11 +56,7 @@ export class WalletController {
             if (!address || !message || !signature) {
                 throw new ApiError(400, 'Address, message, and signature are required');
             }
-
-            if (!validateAddress(address)) {
-                throw new ApiError(400, 'Invalid wallet address format');
-            }
-
+            
             // Verify that the signature is valid
             const isValid = verifySignature(address, message, signature);
 

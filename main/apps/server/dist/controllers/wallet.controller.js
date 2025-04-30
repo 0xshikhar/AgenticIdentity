@@ -30,9 +30,6 @@ class WalletController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { address } = req.params;
-                if (!(0, blockchain_js_1.validateAddress)(address)) {
-                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
-                }
                 const info = yield this.walletService.getWalletInfo(address);
                 res.status(200).json(info);
             }
@@ -68,9 +65,6 @@ class WalletController {
                 const { address, message, signature } = req.body;
                 if (!address || !message || !signature) {
                     throw new api_error_js_1.ApiError(400, 'Address, message, and signature are required');
-                }
-                if (!(0, blockchain_js_1.validateAddress)(address)) {
-                    throw new api_error_js_1.ApiError(400, 'Invalid wallet address format');
                 }
                 // Verify that the signature is valid
                 const isValid = (0, blockchain_js_1.verifySignature)(address, message, signature);

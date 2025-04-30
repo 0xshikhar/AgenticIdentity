@@ -8,7 +8,9 @@
         "start": "node dist/index.js",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "test": "jest",
-        "build:start": "bun build && bun run dist/index.js"
+        "build:start": "bun build && bun run dist/index.js",
+        "validate-address": "node debug/validate-address.js",
+        "test-blockscout": "node debug/test-blockscout-api.js"
     },
     "dependencies": {
         "axios": "^1.6.2",

@@ -18,7 +18,9 @@
             }
         ],
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@anon-aadhaar/core": ["./src/types/anon-aadhaar.d.ts"],
+            "@anon-aadhaar/react": ["./src/types/anon-aadhaar.d.ts"]
         },
         "target": "ES2020",
         "typeRoots": [

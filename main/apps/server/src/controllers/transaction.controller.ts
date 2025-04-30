@@ -25,11 +25,7 @@ export class TransactionController {
             const limit = parseInt(req.query.limit as string) || 20;
             // Default sort can be handled in the service, or passed as query param if needed
             // const sort = (req.query.sort as string) === 'asc' ? 'asc' : 'desc';
-
-            if (!validateAddress(walletAddress)) {
-                throw new ApiError(400, 'Invalid wallet address format');
-            }
-
+            
             const result = await this.transactionService.getWalletTransactions(walletAddress, page, limit /*, sort */);
             res.status(200).json(result);
         } catch (error) {

@@ -514,44 +514,32 @@ export default function HomePage() {
         }
     };
 
-    // Add this new function to test the API connection
+    // Add this function to test the API connection
     const testApiConnection = async () => {
         try {
-            setApiConnectionStatus('unknown');
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            setDebugData({
-                apiUrl,
-                testingTime: new Date().toISOString(),
-                environment: process.env.NODE_ENV,
-                walletConnected: isConnected,
-                walletAddress: address
+            const aiApiUrl = `${apiUrl}/api/score/health`; // Endpoint to check AI service
+            
+            console.log(`Testing API connection to: ${aiApiUrl}`);
+            const response = await fetch(aiApiUrl, { 
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
             });
-
-            // Try to make a simple request to check if the API is available
-            const response = await axios.get(`${apiUrl}/health`, { timeout: 5000 });
-            console.log("API health check response:", response.data);
-
+            
+            if (!response.ok) {
+                console.warn(`API health check failed with status: ${response.status}`);
+                setApiConnectionStatus('disconnected');
+                return false;
+            }
+            
+            const data = await response.json();
+            console.log("API health check response:", data);
             setApiConnectionStatus('connected');
-            setDebugData(prev => ({
-                ...prev,
-                connectionStatus: 'connected',
-                healthResponse: response.data
-            }));
-
             return true;
         } catch (error) {
             console.error("API connection test failed:", error);
             setApiConnectionStatus('disconnected');
-            setDebugData(prev => ({
-                ...prev,
-                connectionStatus: 'disconnected',
-                error: {
-                    message: error.message,
-                    name: error.name,
-                    code: error.code
-                }
-            }));
-
             return false;
         }
     };
@@ -560,6 +548,7 @@ export default function HomePage() {
     const fetchWalletScore = async (walletAddress: string) => {
         setWalletScoreLoading(true);
         setWalletScoreError(null);
+        setDebugData(null);
 
         try {
             // First check if API is accessible
@@ -570,11 +559,14 @@ export default function HomePage() {
 
             console.log(`Fetching wallet score for: ${walletAddress}`);
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-            console.log(`Using API URL: ${apiUrl}/api/score/${walletAddress}`);
+            console.log(`Using API URL: ${apiUrl}/api/score/enhanced/${walletAddress}`);
 
-            const response = await axios.get(`${apiUrl}/api/score/${walletAddress}`, {
+            const response = await axios.get(`${apiUrl}/api/score/enhanced/${walletAddress}`, {
                 timeout: 10000 // Add a reasonable timeout
             });
+            
+            // Store response for debugging
+            setDebugData(response.data);
             console.log("API response:", response.data);
 
             if (response.data.success) {
@@ -597,6 +589,8 @@ export default function HomePage() {
             } else if (error.response) {
                 // Server responded with an error status code
                 errorMessage = `Server error (${error.response.status}): ${error.response?.data?.error || error.message}`;
+                // Save response data for debugging
+                setDebugData(error.response.data);
             } else if (error.request) {
                 // Request was made but no response received
                 errorMessage = "No response from server. The request was made but no response was received.";
@@ -936,39 +930,178 @@ export default function HomePage() {
                         )}
 
                         {identity && (
-                            <div className="mt-6 p-5 bg-white rounded-xl shadow-md w-full max-w-md">
-                                <h2 className="text-xl font-semibold mb-3">Your AgenticID Identity:</h2>
-                                {/* nft image */}
-                                <img src={i} alt="AgenticID" className="w-full h-40 object-cover rounded-lg mb-4" />
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">ENS Verified:</span>
-                                        <span className={identity.ensVerified ? "text-green-600" : "text-red-600"}>
-                                            {identity.ensVerified ? "Yes" : "No"}
-                                        </span>
+                            <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl overflow-hidden shadow-lg border border-gray-100 w-full max-w-4xl transition-all duration-300 hover:shadow-xl">
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mr-2 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1.323l-3.954 1.582a1 1 0 00-.646.934v4.286a1 1 0 00.545.888l3.273 1.636a1 1 0 00.369.093L9 14.702V17a1 1 0 001 1h.008a1 1 0 00.76-.35l8-10A1 1 0 0019 7h-1.344l-5.72 6.04L10 12.222V2z" clipRule="evenodd" />
+                                        </svg>
+                                        Your AgenticID Card
+                                    </h2>
+                                    
+                                    <div className="flex flex-col md:flex-row gap-8">
+                                        {/* Left side - Image and token info */}
+                                        <div className="md:w-2/5 flex flex-col">
+                                            <div className="relative">
+                                                <img 
+                                                    src='/agentic-id.jpg' 
+                                                    alt="AgenticID" 
+                                                    className="w-full aspect-square object-cover rounded-xl shadow-md mb-4" 
+                                                />
+                                                <div className="absolute top-3 right-3 bg-black/80 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                                    Token #{tokenId}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                                <div className="mb-3 flex justify-between items-center">
+                                                    <h3 className="text-sm font-semibold text-gray-500">VERIFICATION SCORES</h3>
+                                                </div>
+                                                
+                                                {/* Wallet Score */}
+                                                <div className="mb-4">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-sm font-medium">Wallet Reputation</span>
+                                                        <span className="text-sm font-bold">{identity.walletScore}/100</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div 
+                                                            className="bg-blue-600 h-2 rounded-full" 
+                                                            style={{ width: `${identity.walletScore}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Farcaster Score */}
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-sm font-medium">Farcaster Reputation</span>
+                                                        <span className="text-sm font-bold">{identity.farcasterScore}/100</span>
+                                                    </div>
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div 
+                                                            className="bg-purple-600 h-2 rounded-full" 
+                                                            style={{ width: `${identity.farcasterScore}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Right side - Verification details */}
+                                        <div className="md:w-3/5 bg-white rounded-xl p-6 shadow-sm">
+                                            <h3 className="text-xl font-semibold mb-4 text-gray-800">Verification Details</h3>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* ENS */}
+                                                <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${identity.ensVerified ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                                        {identity.ensVerified ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">ENS</h4>
+                                                        <p className={`text-sm ${identity.ensVerified ? "text-green-600" : "text-red-600"}`}>
+                                                            {identity.ensVerified ? "Verified" : "Not Verified"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Face */}
+                                                <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${identity.faceVerified ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                                        {identity.faceVerified ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">Face Verification</h4>
+                                                        <p className={`text-sm ${identity.faceVerified ? "text-green-600" : "text-red-600"}`}>
+                                                            {identity.faceVerified ? "Verified" : "Not Verified"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Twitter */}
+                                                <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${identity.twitterVerified ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                                        {identity.twitterVerified ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">Twitter</h4>
+                                                        <p className={`text-sm ${identity.twitterVerified ? "text-green-600" : "text-red-600"}`}>
+                                                            {identity.twitterVerified ? "Verified" : "Not Verified"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Worldcoin */}
+                                                <div className="bg-gray-50 p-4 rounded-lg flex items-start">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${identity.worldcoinVerified ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                                                        {identity.worldcoinVerified ? (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold">Worldcoin</h4>
+                                                        <p className={`text-sm ${identity.worldcoinVerified ? "text-green-600" : "text-red-600"}`}>
+                                                            {identity.worldcoinVerified ? "Verified" : "Not Verified"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-6 space-y-3 border-t pt-4">
+                                                <div className="flex">
+                                                    <div className="w-40 text-gray-500 font-medium">Nationality:</div>
+                                                    <div className="font-semibold">{identity.nationality}</div>
+                                                </div>
+                                                
+                                                <div className="flex">
+                                                    <div className="w-40 text-gray-500 font-medium">Last Updated:</div>
+                                                    <div className="font-semibold">{identity.lastUpdated}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mt-6">
+                                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <div className="flex items-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <span className="text-sm">This verifiable identity is stored on-chain and can be used across dApps.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">Face Verified:</span>
-                                        <span className={identity.faceVerified ? "text-green-600" : "text-red-600"}>
-                                            {identity.faceVerified ? "Yes" : "No"}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">Twitter Verified:</span>
-                                        <span className={identity.twitterVerified ? "text-green-600" : "text-red-600"}>
-                                            {identity.twitterVerified ? "Yes" : "No"}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">Worldcoin Verified:</span>
-                                        <span className={identity.worldcoinVerified ? "text-green-600" : "text-red-600"}>
-                                            {identity.worldcoinVerified ? "Yes" : "No"}
-                                        </span>
-                                    </div>
-                                    <p><span className="font-medium">Nationality:</span> {identity.nationality}</p>
-                                    <p><span className="font-medium">Wallet Score:</span> {identity.walletScore}/100</p>
-                                    <p><span className="font-medium">Farcaster Score:</span> {identity.farcasterScore}/100</p>
-                                    <p><span className="font-medium">Last Updated:</span> {identity.lastUpdated}</p>
                                 </div>
                             </div>
                         )}

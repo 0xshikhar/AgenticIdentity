@@ -25,6 +25,8 @@
     ],
     "packageManager": "yarn@4.1.0",
     "devDependencies": {
+        "patch-package": "^8.0.0",
+        "postinstall-postinstall": "^2.1.0",
         "prettier": "^3.2.5"
     },
     "dependencies": {
