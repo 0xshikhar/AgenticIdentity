@@ -7,7 +7,8 @@
         "build": "tsc",
         "start": "node dist/index.js",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-        "test": "jest"
+        "test": "jest",
+        "build:start": "bun build && bun run dist/index.js"
     },
     "dependencies": {
         "@prisma/client": "^5.6.0",

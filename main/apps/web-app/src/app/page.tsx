@@ -16,7 +16,7 @@ import { MdVerified } from "react-icons/md"
 import { AnonAadhaarProof, LogInWithAnonAadhaar, useAnonAadhaar, useProver } from "@anon-aadhaar/react"
 import { NEBULAID_ADDRESS } from "@/lib/contract"
 import NebulaIDNFT from "../../contract-artifacts/NebulaIDNFT.json"
-import { useAccount, useEnsName } from 'wagmi';
+import { useAccount, useEnsName } from 'wagmi'; 
 import { signMessage } from '@wagmi/core'
 import config from '@/app/providers'
 import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethers"
@@ -24,6 +24,7 @@ import { ethers, Contract, JsonRpcProvider, Wallet, AlchemyProvider } from "ethe
 import FaceButton from "@/components/FaceButton"
 import { FaceVerificationData } from '@/components/FaceButton'
 import { toast } from 'sonner'
+import axios from "axios"
 
 type HomeProps = {
     setUseTestAadhaar: (state: boolean) => void
@@ -68,6 +69,11 @@ export default function HomePage() {
 
     // Add new state for face verification data
     const [faceVerificationData, setFaceVerificationData] = useState<FaceVerificationData | null>(null);
+
+    const [walletScore, setWalletScore] = useState<number | null>(null);
+    const [walletScoreLoading, setWalletScoreLoading] = useState(false);
+    const [walletScoreError, setWalletScoreError] = useState<string | null>(null);
+    const [scoreFactors, setScoreFactors] = useState<any[]>([]);
 
     useEffect(() => {
         const ensName = async () => {
@@ -147,6 +153,12 @@ export default function HomePage() {
             setIdentityStatus(true)
         }
     }, [setLogs])
+
+    useEffect(() => {
+        if (address && isConnected) {
+            fetchWalletScore(address);
+        }
+    }, [address, isConnected]);
 
     const createReview = useCallback(async () => {
         if (_identity && reviewerHasJoined(_identity)) {
@@ -252,6 +264,27 @@ export default function HomePage() {
         if (data.success) {
             // For example, you might want to track that human verification is complete
             // or update some other state related to identity verification
+        }
+    };
+
+    const fetchWalletScore = async (walletAddress: string) => {
+        setWalletScoreLoading(true);
+        setWalletScoreError(null);
+        
+        try {
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/score/enhanced/${walletAddress}`);
+            
+            if (response.data.success) {
+                setWalletScore(response.data.data.score);
+                setScoreFactors(response.data.data.factors || []);
+            } else {
+                throw new Error("Failed to get wallet score");
+            }
+        } catch (error) {
+            console.error("Error fetching wallet score:", error);
+            setWalletScoreError("Failed to fetch wallet score");
+        } finally {
+            setWalletScoreLoading(false);
         }
     };
 
@@ -399,14 +432,45 @@ export default function HomePage() {
                         {/* Wallet Score Card */}
                         <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
                             <h2 className="text-xl md:text-2xl font-semibold mb-3">Wallet Score</h2>
-                            <div className="flex-grow flex items-center justify-center text-3xl">
-                                {isConnected ? (
-                                    <div className="flex items-center gap-2">
-                                        {WalletScore?.stat}
-                                        <MdVerified className="text-green-400" />
-                                    </div>
-                                ) : (
+                            <div className="flex-grow flex flex-col items-center justify-center w-full">
+                                {!isConnected ? (
                                     <div className="text-sm">Connect your wallet</div>
+                                ) : walletScoreLoading ? (
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                    </div>
+                                ) : walletScoreError ? (
+                                    <div className="text-red-500 text-sm">{walletScoreError}</div>
+                                ) : walletScore !== null ? (
+                                    <>
+                                        <div className="text-4xl font-bold mb-2 flex items-center gap-2">
+                                            {walletScore}
+                                            <MdVerified className="text-green-400" />
+                                        </div>
+                                        {scoreFactors.length > 0 && (
+                                            <div className="mt-3 w-full">
+                                                <h3 className="text-sm font-medium mb-2">Top factors:</h3>
+                                                <div className="space-y-2">
+                                                    {scoreFactors.slice(0, 3).map((factor, index) => (
+                                                        <div key={index} className="text-xs">
+                                                            <div className="flex justify-between">
+                                                                <span>{factor.name}</span>
+                                                                <span>{factor.contribution.toFixed(1)}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                                <div 
+                                                                    className="bg-green-600 h-1.5 rounded-full" 
+                                                                    style={{ width: `${factor.score}%` }}
+                                                                ></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-sm">Score unavailable</div>
                                 )}
                             </div>
                         </div>
