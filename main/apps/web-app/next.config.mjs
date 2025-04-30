@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-
+    
 import withPWA from "next-pwa"
 import { config } from "dotenv"
 
@@ -44,7 +44,7 @@ const nextConfig = withPWA({
                 zlib: false,
                 path: false,
                 os: false,
-                buffer: require.resolve('buffer/'),
+                // buffer: require.resolve('buffer/'),
                 encoding: false
             }
         }

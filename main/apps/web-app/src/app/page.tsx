@@ -15,7 +15,7 @@ import { MdOutlinePendingActions } from "react-icons/md"
 import { MdVerified } from "react-icons/md"
 import { AnonAadhaarProof, LogInWithAnonAadhaar, useAnonAadhaar, useProver } from "@anon-aadhaar/react"
 import { NEBULAID_ADDRESS } from "@/lib/contract"
-import NebulaIDNFT from "../../contract-artifacts/NebulaIDNFT.json"
+import AgenticIDNFT from "../../../contracts/artifacts/contracts/AgenticID.sol/AgenticIDNFT.json"
 import { useAccount, useEnsName } from 'wagmi';
 import { signMessage } from '@wagmi/core'
 import config from '@/app/providers'
@@ -112,7 +112,7 @@ export default function HomePage() {
                     const signer = new Wallet(ethereumPrivateKey, provider)
                     const contract = new ethers.Contract(
                         NEBULAID_ADDRESS,
-                        NebulaIDNFT.abi,
+                        AgenticIDNFT.abi,
                         signer
                     )
                     setContract(contract as any)
@@ -223,13 +223,13 @@ export default function HomePage() {
             const ensVerfStatus = ensVerified !== null;
             const faceVerfStatus = faceVerificationData?.success || false;
             const twitterVerfStatus = true; // Update based on your Twitter verification logic
-            
+
             // Calculate wallet score or use the one fetched from API
             const finalWalletScore = walletScore || 0;
-            
+
             // For now, we're setting a default Farcaster score
             const farcasterScore = 0;
-            
+
             // @ts-ignore
             const tx = await contract.mintAgenticID(
                 ensVerfStatus, // ENS verified
@@ -240,10 +240,10 @@ export default function HomePage() {
                 finalWalletScore, // Wallet score
                 farcasterScore // Farcaster score
             );
-            
+
             await tx.wait();
             toast.success("AgenticID minted successfully");
-            
+
             const userTokenId = await contract.getUserTokenId(address);
             setTokenId(userTokenId.toString());
         } catch (error) {
@@ -300,20 +300,20 @@ export default function HomePage() {
             // Try to make a simple request to check if the API is available
             const response = await axios.get(`${apiUrl}/health`, { timeout: 5000 });
             console.log("API health check response:", response.data);
-            
+
             setApiConnectionStatus('connected');
-            setDebugData(prev => ({ 
-                ...prev, 
+            setDebugData(prev => ({
+                ...prev,
                 connectionStatus: 'connected',
                 healthResponse: response.data
             }));
-            
+
             return true;
         } catch (error) {
             console.error("API connection test failed:", error);
             setApiConnectionStatus('disconnected');
-            setDebugData(prev => ({ 
-                ...prev, 
+            setDebugData(prev => ({
+                ...prev,
                 connectionStatus: 'disconnected',
                 error: {
                     message: error.message,
@@ -321,7 +321,7 @@ export default function HomePage() {
                     code: error.code
                 }
             }));
-            
+
             return false;
         }
     };
@@ -330,27 +330,27 @@ export default function HomePage() {
     const fetchWalletScore = async (walletAddress: string) => {
         setWalletScoreLoading(true);
         setWalletScoreError(null);
-        
+
         try {
             // First check if API is accessible
             const isApiConnected = await testApiConnection();
             if (!isApiConnected) {
                 throw new Error("Cannot connect to the wallet score API. Please check if the server is running.");
             }
-            
+
             console.log(`Fetching wallet score for: ${walletAddress}`);
             const apiUrl = process.env.NEXT_PUBLIC_API_URL;
             console.log(`Using API URL: ${apiUrl}/api/score/${walletAddress}`);
-            
+
             const response = await axios.get(`${apiUrl}/api/score/${walletAddress}`, {
                 timeout: 10000 // Add a reasonable timeout
             });
             console.log("API response:", response.data);
-            
+
             if (response.data.success) {
                 setWalletScore(response.data.data.score);
                 setScoreFactors(response.data.data.factors || []);
-                
+
                 toast.success('Wallet score successfully retrieved', {
                     description: `Score: ${response.data.data.score}/100`,
                     duration: 5000,
@@ -361,7 +361,7 @@ export default function HomePage() {
             }
         } catch (error) {
             let errorMessage = "Unknown error";
-            
+
             if (error.code === 'ERR_NETWORK') {
                 errorMessage = "Network error: Unable to connect to the API server. Please check if the server is running.";
             } else if (error.response) {
@@ -374,11 +374,11 @@ export default function HomePage() {
                 // Something else happened while setting up the request
                 errorMessage = error.message || "Failed to fetch wallet score";
             }
-            
+
             console.error("Error fetching wallet score:", error);
             console.error("Error details:", errorMessage);
             setWalletScoreError(errorMessage);
-            
+
             toast.error('Failed to fetch wallet score', {
                 description: errorMessage,
                 duration: 5000,
@@ -400,28 +400,6 @@ export default function HomePage() {
                     </div>
                     {/* First row of cards */}
                     <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
-                        {/* ENS Verification Card */}
-
-                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
-                            <h2 className="text-xl md:text-2xl font-semibold mb-3">ENS Verification</h2>
-                            <div className="mb-4 flex-grow">
-                                {isLoading ? (
-                                    <p>Loading ENS name...</p>
-                                ) : isError ? (
-                                    <p>Seems like you don&apos;t have an ENS name :( </p>
-                                ) : displayName ? (
-                                    <p>Connected as: {displayName}</p>
-                                ) : (
-                                    <p>Please connect your wallet</p>
-                                )}
-                            </div>
-                            <button
-                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
-                                onClick={signENSMessage}
-                            >
-                                Verify your ENS
-                            </button>
-                        </div>
 
                         {/* Face Verification Card */}
                         <div className="bg-white p-10 rounded-xl shadow-md h-full flex flex-col">
@@ -468,6 +446,123 @@ export default function HomePage() {
                                 />
                             </div>
                         </div>
+
+
+                        {/* ENS Verification Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">ENS Verification</h2>
+                            <div className="mb-4 flex-grow">
+                                {isLoading ? (
+                                    <p>Loading ENS name...</p>
+                                ) : isError ? (
+                                    <p>Seems like you don&apos;t have an ENS name :( </p>
+                                ) : displayName ? (
+                                    <p>Connected as: {displayName}</p>
+                                ) : (
+                                    <p>Please connect your wallet</p>
+                                )}
+                            </div>
+                            <button
+                                className="bg-black py-2 px-6 text-white rounded hover:bg-gray-800 transition-colors"
+                                onClick={signENSMessage}
+                            >
+                                Verify your ENS
+                            </button>
+                        </div>
+
+                        {/* Wallet Score Card */}
+                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
+                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Wallet Score</h2>
+                            <div className="flex-grow flex flex-col items-center justify-center w-full">
+                                {!isConnected ? (
+                                    <div className="text-sm">Connect your wallet</div>
+                                ) : (
+                                    <>
+                                        {/* API Status Indicator */}
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div
+                                                className={`w-3 h-3 rounded-full ${apiConnectionStatus === 'connected' ? 'bg-green-500' :
+                                                        apiConnectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+                                                    }`}
+                                            ></div>
+                                            <span className="text-xs">
+                                                {apiConnectionStatus === 'connected' ? 'API Connected' :
+                                                    apiConnectionStatus === 'disconnected' ? 'API Disconnected' : 'API Status Unknown'}
+                                            </span>
+                                            <button
+                                                onClick={testApiConnection}
+                                                className="text-xs text-blue-500 underline"
+                                            >
+                                                Test
+                                            </button>
+                                        </div>
+
+                                        {/* Manual fetch button */}
+                                        <button
+                                            onClick={() => fetchWalletScore(address)}
+                                            className="bg-black text-white py-2 px-6 mb-4 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                            disabled={walletScoreLoading}
+                                        >
+                                            {walletScoreLoading ? 'Loading...' : 'Get Wallet Score'}
+                                        </button>
+
+                                        {/* Debug button */}
+                                        <button
+                                            onClick={() => setShowDebugInfo(!showDebugInfo)}
+                                            className="text-xs text-gray-500 mb-3 underline"
+                                        >
+                                            {showDebugInfo ? 'Hide Debug Info' : 'Show Debug Info'}
+                                        </button>
+
+                                        {/* Debug info */}
+                                        {showDebugInfo && debugData && (
+                                            <div className="mb-4 p-3 bg-gray-100 rounded text-xs w-full overflow-auto max-h-40">
+                                                <pre>{JSON.stringify(debugData, null, 2)}</pre>
+                                            </div>
+                                        )}
+
+                                        {walletScoreLoading ? (
+                                            <div className="flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                                            </div>
+                                        ) : walletScoreError ? (
+                                            <div className="text-red-500 text-sm">Error: {walletScoreError}</div>
+                                        ) : walletScore !== null ? (
+                                            <>
+                                                <div className="text-4xl font-bold mb-2 flex items-center gap-2">
+                                                    {walletScore}
+                                                    <MdVerified className="text-green-400" />
+                                                </div>
+                                                {scoreFactors.length > 0 && (
+                                                    <div className="mt-3 w-full">
+                                                        <h3 className="text-sm font-medium mb-2">Top factors:</h3>
+                                                        <div className="space-y-2">
+                                                            {scoreFactors.slice(0, 3).map((factor, index) => (
+                                                                <div key={index} className="text-xs">
+                                                                    <div className="flex justify-between">
+                                                                        <span>{factor.name}</span>
+                                                                        <span>{factor.contribution.toFixed(1)}%</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                                        <div
+                                                                            className="bg-green-600 h-1.5 rounded-full"
+                                                                            style={{ width: `${factor.score}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-sm">Click the button to calculate your score</div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
 
                         {/* Twitter Verification Card */}
                         <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
@@ -529,99 +624,6 @@ export default function HomePage() {
                             <p className="flex-grow">Using TLSNotary (pending)</p>
                         </div>
 
-                        {/* Wallet Score Card */}
-                        <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md h-full">
-                            <h2 className="text-xl md:text-2xl font-semibold mb-3">Wallet Score</h2>
-                            <div className="flex-grow flex flex-col items-center justify-center w-full">
-                                {!isConnected ? (
-                                    <div className="text-sm">Connect your wallet</div>
-                                ) : (
-                                    <>
-                                        {/* API Status Indicator */}
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <div 
-                                                className={`w-3 h-3 rounded-full ${
-                                                    apiConnectionStatus === 'connected' ? 'bg-green-500' : 
-                                                    apiConnectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
-                                                }`}
-                                            ></div>
-                                            <span className="text-xs">
-                                                {apiConnectionStatus === 'connected' ? 'API Connected' : 
-                                                 apiConnectionStatus === 'disconnected' ? 'API Disconnected' : 'API Status Unknown'}
-                                            </span>
-                                            <button 
-                                                onClick={testApiConnection}
-                                                className="text-xs text-blue-500 underline"
-                                            >
-                                                Test
-                                            </button>
-                                        </div>
-                                        
-                                        {/* Manual fetch button */}
-                                        <button
-                                            onClick={() => fetchWalletScore(address)}
-                                            className="bg-black text-white py-2 px-6 mb-4 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
-                                            disabled={walletScoreLoading}
-                                        >
-                                            {walletScoreLoading ? 'Loading...' : 'Get Wallet Score'}
-                                        </button>
-                                        
-                                        {/* Debug button */}
-                                        <button
-                                            onClick={() => setShowDebugInfo(!showDebugInfo)}
-                                            className="text-xs text-gray-500 mb-3 underline"
-                                        >
-                                            {showDebugInfo ? 'Hide Debug Info' : 'Show Debug Info'}
-                                        </button>
-                                        
-                                        {/* Debug info */}
-                                        {showDebugInfo && debugData && (
-                                            <div className="mb-4 p-3 bg-gray-100 rounded text-xs w-full overflow-auto max-h-40">
-                                                <pre>{JSON.stringify(debugData, null, 2)}</pre>
-                                            </div>
-                                        )}
-                                        
-                                        {walletScoreLoading ? (
-                                            <div className="flex items-center justify-center">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                                            </div>
-                                        ) : walletScoreError ? (
-                                            <div className="text-red-500 text-sm">Error: {walletScoreError}</div>
-                                        ) : walletScore !== null ? (
-                                            <>
-                                                <div className="text-4xl font-bold mb-2 flex items-center gap-2">
-                                                    {walletScore}
-                                                    <MdVerified className="text-green-400" />
-                                                </div>
-                                                {scoreFactors.length > 0 && (
-                                                    <div className="mt-3 w-full">
-                                                        <h3 className="text-sm font-medium mb-2">Top factors:</h3>
-                                                        <div className="space-y-2">
-                                                            {scoreFactors.slice(0, 3).map((factor, index) => (
-                                                                <div key={index} className="text-xs">
-                                                                    <div className="flex justify-between">
-                                                                        <span>{factor.name}</span>
-                                                                        <span>{factor.contribution.toFixed(1)}%</span>
-                                                                    </div>
-                                                                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                                                        <div 
-                                                                            className="bg-green-600 h-1.5 rounded-full" 
-                                                                            style={{ width: `${factor.score}%` }}
-                                                                        ></div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="text-sm">Click the button to calculate your score</div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
                     </div>
 
                     {/* AgenticID Section */}
