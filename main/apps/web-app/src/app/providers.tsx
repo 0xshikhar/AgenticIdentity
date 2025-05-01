@@ -21,7 +21,7 @@ const projectId = "9811958bd307518b364ff7178034c435"
 export const config = getDefaultConfig({
     appName: "AgenticID",
     projectId: projectId,
-    chains: [rootstockTestnet, rootstock, mainnet],
+    chains: [rootstockTestnet, rootstock],
     ssr: true // If your dApp uses server side rendering (SSR)
 })
 
