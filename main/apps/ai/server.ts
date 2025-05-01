@@ -1,4 +1,4 @@
-import express from 'express'; 
+import express, { Request, Response } from 'express'; 
 import cors from 'cors';
 // Choose one option based on your preference:
 
@@ -19,7 +19,7 @@ app.use(express.json());
 const scoreGenerator = new ScoreGenerator();
 
 // Health check endpoint    
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({ 
         status: 'ok', 
         service: 'wallet-score-ai',
@@ -28,7 +28,7 @@ app.get('/health', (req, res) => {
 });
 
 // Score generation endpoint
-app.get('/score/:walletAddress', async (req, res) => {  
+app.get('/score/:walletAddress', async (req: Request, res: Response) => {  
     try {
         const { walletAddress } = req.params;
         

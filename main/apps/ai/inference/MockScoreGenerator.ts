@@ -4,7 +4,6 @@ export class MockScoreGenerator {
     private isInitialized = false;
 
     async initialize(): Promise<void> {
-        // Just set flag to true, no actual model loading
         this.isInitialized = true;
         console.log('Mock reputation model initialized successfully');
     }
@@ -14,11 +13,9 @@ export class MockScoreGenerator {
             await this.initialize();
         }
 
-        // Generate random but plausible mock data
-        const score = Math.floor(Math.random() * 100);
-        const confidence = 0.7 + (Math.random() * 0.3); // Between 0.7 and 1.0
+        const score = 30 + Math.floor(Math.random() * 26);
+        const confidence = 0.7 + (Math.random() * 0.3);
         
-        // Generate mock factors
         const factors = [
             {
                 name: 'Transaction Volume',
@@ -43,7 +40,6 @@ export class MockScoreGenerator {
             }
         ];
         
-        // Return mock data
         return {
             walletAddress: walletAddress,     
             score: score,
