@@ -125,8 +125,6 @@ sequenceDiagram
     WebApp-->>User: Display identity details
     ```
 
-## Data Flow
-
 ```mermaid
 flowchart TD
     subgraph Client
